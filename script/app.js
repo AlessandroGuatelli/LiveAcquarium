@@ -553,12 +553,16 @@ function repopulateCreatures() {
     updateHUD();
 }
 
-async function toggleFullscreen() {
+function toggleFullscreen() {
     try {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        } else {
-            await document.exitFullscreen();
+        const action = document.fullscreenElement
+            ? document.exitFullscreen()
+            : document.documentElement.requestFullscreen();
+
+        if (action && typeof action.catch === 'function') {
+            action.catch(error => {
+                console.warn('Fullscreen non disponibile:', error);
+            });
         }
     } catch (error) {
         console.warn('Fullscreen non disponibile:', error);
