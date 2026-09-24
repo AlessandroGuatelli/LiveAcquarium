@@ -340,7 +340,10 @@ async function loadModelAsset(modelDefinition) {
     if (modelCache.has(modelPath)) return modelCache.get(modelPath);
 
     try {
-        const asset = await modelLoader.loadAsync(modelPath);
+        // Risoluzione esplicita rispetto alla pagina: gestisce correttamente anche
+        // percorsi come "models/Manta ray.glb" con spazi nel nome.
+        const resolvedPath = new URL(modelPath, document.baseURI).href;
+        const asset = await modelLoader.loadAsync(resolvedPath);
         modelCache.set(modelPath, asset);
         loadedModelPaths.add(modelPath);
         return asset;
