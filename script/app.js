@@ -683,6 +683,50 @@ function animate() {
     updateHUD();
 }
 
+function getMotionProfile(entity) {
+    const id = entity.id || '';
+    const type = entity.type;
+
+    if (type === 'crustacean') {
+        return {
+            turn: 0.09,
+            arrival: 2.5,
+            vertical: 0,
+            bob: 0,
+            bank: 0,
+            sway: 0.02
+        };
+    }
+
+    if (id === 'squalo_bianco') {
+        return { turn: 0.055, arrival: 7, vertical: 0.32, bob: 0.35, bank: 0.16, sway: 0.035 };
+    }
+    if (id === 'delfino') {
+        return { turn: 0.075, arrival: 5, vertical: 0.55, bob: 0.65, bank: 0.18, sway: 0.055 };
+    }
+    if (id === 'manta') {
+        return { turn: 0.045, arrival: 6, vertical: 0.7, bob: 0.5, bank: 0.22, sway: 0.045 };
+    }
+    if (id === 'balena') {
+        return { turn: 0.032, arrival: 10, vertical: 0.22, bob: 0.25, bank: 0.10, sway: 0.025 };
+    }
+
+    return { turn: 0.11, arrival: 3.5, vertical: 0.45, bob: 0.45, bank: 0.12, sway: 0.07 };
+}
+
+function chooseSwimmingTarget(entity, behavior, profile) {
+    const box = behavior.bounding_box || { x: 100, y: 20, z: 100 };
+    const margin = Math.min(8, Math.max(3, profile.arrival));
+    const x = (Math.random() - 0.5) * Math.max(10, box.x - margin * 2);
+    const z = (Math.random() - 0.5) * Math.max(10, box.z - margin * 2);
+    const floorY = getFloorHeight(x, z);
+    const maxY = floorY + Math.max(9, Number(box.y) || 20);
+    const minY = floorY + (entity.id === 'manta' ? 8 : 10);
+    const y = THREE.MathUtils.lerp(minY, maxY, Math.random());
+
+    entity.target.set(x, y, z);
+}
+
 function updateEntities(delta, time) {
     const entitiesToRespawn = [];
 
@@ -690,41 +734,54 @@ function updateEntities(delta, time) {
         const { mesh, behavior, target } = entity;
 
         if (entity.mixer && mesh.visible) entity.mixer.update(delta);
-        if (!mesh.visible || behavior.type === 'static') continue;
 
-        let speed = (Number(behavior.base_speed) || 0.04) * simParams.speedMultiplier;
-        let overriding = false;
-        const radius = Number(behavior.collision_radius) || 1;
-
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
-        const halfX = (Number(behavior.bounding_box?.x) || 100) / 2;
-        const halfZ = (Number(behavior.bounding_box?.z) || 100) / 2;
-
-        if (Math.abs(mesh.position.x) > halfX) {
-            mesh.position.x = Math.sign(mesh.position.x) * halfX;
-            forward.x *= -1;
-            overriding = true;
+        // I coralli restano fermi ma hanno una piccola oscillazione organica.
+        if (behavior.type === 'static') {
+            if (entity.type === 'plant') {
+                mesh.rotation.z = Math.sin(time * 0.8 + entity.seed) * 0.035;
+                mesh.rotation.x = Math.cos(time * 0.65 + entity.seed) * 0.025;
+            }
+            continue;
         }
 
-        if (Math.abs(mesh.position.z) > halfZ) {
-            mesh.position.z = Math.sign(mesh.position.z) * halfZ;
-            forward.z *= -1;
-            overriding = true;
+        if (!mesh.visible) continue;
+
+        const profile = getMotionProfile(entity);
+        const radius = Number(behavior.collision_radius) || 1;
+        const box = behavior.bounding_box || { x: 100, y: 20, z: 100 };
+        const halfX = (Number(box.x) || 100) / 2;
+        const halfZ = (Number(box.z) || 100) / 2;
+        let speed = (Number(behavior.base_speed) || 0.04) * simParams.speedMultiplier;
+        let overrideTarget = false;
+
+        // Evita gli angoli: quando ci avviciniamo al bordo, il prossimo target
+        // viene scelto verso il centro invece di "rimbalzare" contro il muro.
+        const edgeX = halfX - 6;
+        const edgeZ = halfZ - 6;
+        if (Math.abs(mesh.position.x) > edgeX || Math.abs(mesh.position.z) > edgeZ) {
+            const center = new THREE.Vector3(0, mesh.position.y, 0);
+            const toCenter = center.sub(mesh.position).normalize();
+            target.copy(mesh.position).add(toCenter.multiplyScalar(25));
+            overrideTarget = true;
         }
 
         const floorY = getFloorHeight(mesh.position.x, mesh.position.z);
 
-        if (behavior.type !== 'bottom_crawl') {
-            const minY = floorY + radius;
-            if (mesh.position.y < minY) {
-                mesh.position.y = minY;
-                if (forward.y < 0) forward.y *= -1;
-                overriding = true;
+        if (behavior.type === 'bottom_crawl') {
+            mesh.position.y = floorY + radius * 0.25;
+        } else {
+            const minY = floorY + Math.max(radius, 6);
+            if (mesh.position.y < minY) mesh.position.y += (minY - mesh.position.y) * Math.min(1, delta * 4);
+
+            if (mesh.position.y > floorY + (Number(box.y) || 20) + 4) {
+                const desiredY = floorY + (Number(box.y) || 20) - 2;
+                target.y = THREE.MathUtils.lerp(target.y, desiredY, Math.min(1, delta * 2));
             }
         }
 
-        if (overriding) {
-            target.copy(mesh.position).add(forward.multiplyScalar(20));
+        // Evita di scegliere un target troppo vicino: produce traiettorie più lunghe e naturali.
+        if (!overrideTarget && mesh.position.distanceTo(target) < profile.arrival) {
+            chooseSwimmingTarget(entity, behavior, profile);
         }
 
         let closestTarget = null;
@@ -741,68 +798,62 @@ function updateEntities(delta, time) {
 
             if (wantsPrey || wantsFlee) {
                 closestDistance = distance;
-                closestTarget = {
-                    mesh: other.mesh,
-                    prey: wantsPrey,
-                    predator: wantsFlee
-                };
+                closestTarget = { mesh: other.mesh, prey: wantsPrey, predator: wantsFlee };
             }
         }
 
-        if (closestTarget && !overriding) {
+        if (closestTarget) {
             if (closestTarget.prey && closestDistance < (behavior.hunting_radius || 0)) {
                 if (closestDistance <= (behavior.eat_distance || 0)) {
                     entitiesToRespawn.push(closestTarget.mesh);
                 } else {
                     target.copy(closestTarget.mesh.position);
-                    speed *= 1.5;
-                    overriding = true;
+                    speed *= 1.15;
+                    overrideTarget = true;
                 }
             }
 
             if (closestTarget.predator && closestDistance < (behavior.flee_radius || 0)) {
-                const flee = new THREE.Vector3()
-                    .subVectors(mesh.position, closestTarget.mesh.position)
-                    .normalize();
-
-                target.copy(mesh.position).add(flee.multiplyScalar(15));
-                target.y = Math.max(target.y, getFloorHeight(target.x, target.z) + 5);
-                speed *= 1.8;
-                overriding = true;
+                const flee = new THREE.Vector3().subVectors(mesh.position, closestTarget.mesh.position);
+                flee.y *= 0.45;
+                flee.normalize();
+                target.copy(mesh.position).add(flee.multiplyScalar(20));
+                target.y = Math.max(target.y, getFloorHeight(target.x, target.z) + 8);
+                speed *= 1.35;
+                overrideTarget = true;
             }
         }
 
-        switch (behavior.type) {
-            case 'swim_random':
-                if (!overriding && mesh.position.distanceTo(target) < 5) {
-                    setRandomTarget(target, behavior.bounding_box);
-                }
-                steerTowards(mesh, target, behavior.rotation_speed);
-                mesh.translateZ(speed);
-                mesh.rotation.z = Math.sin(time * 3 + entity.seed) * 0.08;
-                break;
+        if (behavior.type === 'bottom_crawl') {
+            if (!overrideTarget && mesh.position.distanceTo(target) < profile.arrival) {
+                setRandomGroundTarget(target, box);
+            }
+            target.y = floorY + radius * 0.25;
+            steerTowards(mesh, target, profile.turn, false);
+            mesh.translateZ(speed);
+            mesh.rotation.x = 0;
+            mesh.rotation.z = 0;
+            continue;
+        }
 
-            case 'zigzag':
-                entity.timer += delta;
-                if (!overriding && entity.timer > entity.zigzagPeriod) {
-                    entity.timer = 0;
-                    setRandomTarget(target, behavior.bounding_box);
-                }
-                steerTowards(mesh, target, behavior.rotation_speed);
-                mesh.translateZ(speed);
-                break;
+        // Nuoto: accelerazione morbida + variazione laterale/verticale, invece di
+        // cambiare bruscamente direzione o velocità.
+        const distanceToTarget = mesh.position.distanceTo(target);
+        const arrivalFactor = THREE.MathUtils.clamp(distanceToTarget / 18, 0.35, 1);
+        const cruise = speed * THREE.MathUtils.lerp(0.72, 1, arrivalFactor);
 
-            case 'bottom_crawl':
-                if (!overriding && mesh.position.distanceTo(target) < 3) {
-                    setRandomTarget(target, behavior.bounding_box);
-                }
-                mesh.position.y = floorY + radius * 0.25;
-                target.y = mesh.position.y;
-                steerTowards(mesh, target, behavior.rotation_speed);
-                mesh.translateZ(speed);
-                mesh.rotation.x = 0;
-                mesh.rotation.z = 0;
-                break;
+        steerTowards(mesh, target, profile.turn, true);
+        mesh.translateZ(cruise);
+
+        // Piccolo "roll" e bobbing, più evidente sulle specie grandi.
+        const phase = time * (1.2 + profile.sway * 10) + entity.seed;
+        mesh.rotation.z = Math.sin(phase) * profile.bank;
+        mesh.rotation.x += (Math.cos(phase * 0.7) * profile.bob * delta);
+
+        // Corregge dolcemente la quota verso il target, evitando salti verticali.
+        if (profile.vertical > 0) {
+            const verticalDelta = target.y - mesh.position.y;
+            mesh.position.y += verticalDelta * Math.min(1, delta * (1.2 + profile.vertical));
         }
     }
 
@@ -810,36 +861,52 @@ function updateEntities(delta, time) {
         const entity = renderList.find(item => item.mesh === preyMesh);
         if (!entity || !entity.tags.includes('prey')) continue;
 
-        const box = entity.behavior.bounding_box;
+        const box = entity.behavior.bounding_box || { x: 100, y: 20, z: 100 };
         const x = (Math.random() - 0.5) * box.x;
         const z = (Math.random() - 0.5) * box.z;
-        let y = (Math.random() - 0.5) * box.y;
         const floorY = getFloorHeight(x, z);
+        const y = floorY + 10 + Math.random() * Math.max(2, Number(box.y) - 10);
 
-        y = Math.max(y, floorY + 8);
         entity.mesh.position.set(x, y, z);
-        entity.target.copy(entity.mesh.position);
+        chooseSwimmingTarget(entity, entity.behavior, getMotionProfile(entity));
         entity.mesh.visible = entity.baseVisible;
     }
+}
+
+function setRandomGroundTarget(target, box = { x: 100, y: 0, z: 100 }) {
+    const margin = 5;
+    target.set(
+        (Math.random() - 0.5) * Math.max(10, box.x - margin * 2),
+        0,
+        (Math.random() - 0.5) * Math.max(10, box.z - margin * 2)
+    );
 }
 
 function setRandomTarget(target, box = { x: 100, y: 20, z: 100 }) {
     const x = (Math.random() - 0.5) * box.x;
     const z = (Math.random() - 0.5) * box.z;
-    let y = (Math.random() - 0.5) * box.y;
     const floorY = getFloorHeight(x, z);
-
-    y = Math.max(y, floorY + 8);
+    const y = floorY + 10 + Math.random() * Math.max(2, Number(box.y) - 10);
     target.set(x, y, z);
 }
 
-function steerTowards(mesh, target, rotationSpeed = 0.08) {
-    const matrix = new THREE.Matrix4().lookAt(mesh.position, target, mesh.up);
-    const quaternion = new THREE.Quaternion().setFromRotationMatrix(matrix);
+function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true) {
+    const direction = new THREE.Vector3().subVectors(target, mesh.position);
+    if (swimming) direction.y *= 0.65;
+
+    if (direction.lengthSq() < 0.0001) return;
+
+    direction.normalize();
+
+    // I GLB marini sono orientati verso -Z dopo la rotazione definita in config.
+    // Allineiamo quindi il -Z locale alla direzione di marcia, evitando che pesci,
+    // squali e cetacei nuotino all'indietro.
+    const forward = new THREE.Vector3(0, 0, -1);
+    const desired = new THREE.Quaternion().setFromUnitVectors(forward, direction);
 
     mesh.quaternion.slerp(
-        quaternion,
-        Math.min(1, Math.max(0.01, Number(rotationSpeed) * simParams.speedMultiplier))
+        desired,
+        Math.min(1, Math.max(0.015, Number(rotationSpeed) * simParams.speedMultiplier))
     );
 }
 
