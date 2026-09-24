@@ -127,6 +127,10 @@ const sharedGeometries = {
     sphere: new THREE.SphereGeometry(0.5, 16, 16)
 };
 
+// Loader e cache dei modelli GLB: ogni file viene caricato una sola volta
+const modelLoader = new GLTFLoader();
+const modelCache = new Map();
+
 // Cache dei materiali condivisi: riduce il numero di materiali e draw call
 const materialCache = {};
 function getMaterial(color) {
@@ -169,6 +173,9 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
     controls.enableDamping = true;
+    // Limiti di zoom: la camera non può avvicinarsi troppo né allontanarsi oltre il fondale
+    controls.minDistance = 10;
+    controls.maxDistance = 180;
 
     const hemiLight = new THREE.HemisphereLight(0x44aaff, 0x001133, 1.2);
     scene.add(hemiLight);
