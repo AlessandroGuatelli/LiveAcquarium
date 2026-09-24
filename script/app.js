@@ -924,7 +924,7 @@ function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true) {
 
     // I GLB marini usano +Z come direzione visiva di marcia.
     // Il Group ruota verso il target e avanza sul proprio asse: niente retromarcia.
-    const forward = new THREE.Vector3(0, 0, 1);
+    const forward = new THREE.Vector3(0, 0, -1);
     const desired = new THREE.Quaternion().setFromUnitVectors(forward, direction);
     mesh.quaternion.slerp(
         desired,
@@ -951,7 +951,7 @@ function getPredatorTarget(entity, behavior) {
         const preySpeed = Number(other.behavior?.base_speed) || 0.04;
         const lead = THREE.MathUtils.clamp(distance / Math.max(0.1, preySpeed * 90), 0, 8);
         const predicted = other.mesh.position.clone();
-        const preyDirection = new THREE.Vector3(0, 0, 1)
+        const preyDirection = new THREE.Vector3(0, 0, -1)
             .applyQuaternion(other.mesh.quaternion)
             .normalize();
         predicted.addScaledVector(preyDirection, lead);
