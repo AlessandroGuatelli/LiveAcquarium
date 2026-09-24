@@ -553,7 +553,7 @@ function repopulateCreatures() {
     updateHUD();
 }
 
-function toggleFullscreen() {
+async function toggleFullscreen() {
     try {
         if (!document.fullscreenElement) {
             await document.documentElement.requestFullscreen();
