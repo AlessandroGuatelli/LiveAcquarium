@@ -1,6 +1,6 @@
 # 3D models
 
-LiveAcquarium supports local **GLB/GLTF** assets through `config.json`.
+LiveAcquarium supports local **GLB/GLTF** assets through `config.json`. The current aquarium uses the uploaded models `Shark.glb`, `Fish.glb` and `Crab.glb`.
 
 ## Directory
 
@@ -8,9 +8,12 @@ Put model files in:
 
 ```text
 models/
-├── fish/
-├── crustaceans/
-└── environment/
+├── Shark.glb
+├── Fish.glb
+├── Crab.glb
+├── Dolphin.glb
+├── Manta ray.glb
+└── Whale.glb
 ```
 
 Then set an entity's `model.path`, for example:
