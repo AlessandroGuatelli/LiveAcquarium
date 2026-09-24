@@ -250,8 +250,10 @@ async function parseConfig(config) {
 
             if (entityDef.behavior?.type === 'bottom_crawl' || entityDef.behavior?.type === 'static') {
                 y = floorY;
-            } else if (y < floorY + 3) {
-                y = floorY + 5 + Math.random() * 8;
+            } else {
+                // Nuota sempre con un margine netto dal fondale: evita che un GLB
+                // finisca parzialmente sotto il pavimento dopo il centraggio.
+                y = Math.max(y, floorY + 8);
             }
 
             group.position.set(x, y, z);
@@ -274,10 +276,33 @@ async function parseConfig(config) {
         }
     }
 
+    // Tutte le creature partono visibili; il controllo della popolazione
+    // viene applicato solo quando l'utente modifica lo slider.
+    for (const entity of renderList) {
+        entity.baseVisible = true;
+        entity.mesh.visible = true;
+    }
+
     modelStatusReady = true;
 }
 
 function prepareModel(model, modelConfig) {
+    // I modelli GLB possono avere impostazioni di culling/materiali diverse:
+    // normalizziamo la scena una volta per garantire che ogni creatura sia renderizzata.
+    model.traverse(node => {
+        if (!node.isMesh) return;
+        node.visible = true;
+        node.frustumCulled = false;
+
+        if (node.material) {
+            const materials = Array.isArray(node.material) ? node.material : [node.material];
+            materials.forEach(material => {
+                material.side = THREE.DoubleSide;
+                material.needsUpdate = true;
+            });
+        }
+    });
+
     if (Array.isArray(modelConfig.position)) model.position.set(...modelConfig.position);
     if (Array.isArray(modelConfig.rotation)) model.rotation.set(...modelConfig.rotation);
 
@@ -627,7 +652,7 @@ function updateEntities(delta, time) {
         let y = (Math.random() - 0.5) * box.y;
         const floorY = getFloorHeight(x, z);
 
-        if (y < floorY + 4) y = floorY + 7;
+        y = Math.max(y, floorY + 8);
         entity.mesh.position.set(x, y, z);
         entity.target.copy(entity.mesh.position);
         entity.mesh.visible = entity.baseVisible;
@@ -640,7 +665,7 @@ function setRandomTarget(target, box = { x: 100, y: 20, z: 100 }) {
     let y = (Math.random() - 0.5) * box.y;
     const floorY = getFloorHeight(x, z);
 
-    if (y < floorY + 3) y = floorY + 4 + Math.random() * 10;
+    y = Math.max(y, floorY + 8);
     target.set(x, y, z);
 }
 
