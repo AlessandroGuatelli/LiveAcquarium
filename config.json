@@ -13,7 +13,7 @@
         "predator"
       ],
       "count": 2,
-      "scale": 1.5,
+      "scale": 1,
       "model": {
         "path": "models/Shark.glb",
         "position": [
@@ -31,6 +31,7 @@
           1,
           1
         ],
+        "target_size": 8,
         "animation": null
       },
       "fallback_model": {
@@ -134,7 +135,7 @@
         "prey"
       ],
       "count": 40,
-      "scale": 0.6,
+      "scale": 1,
       "model": {
         "path": "models/Fish.glb",
         "position": [
@@ -152,6 +153,7 @@
           1,
           1
         ],
+        "target_size": 2.4,
         "animation": null
       },
       "fallback_model": {
@@ -177,7 +179,7 @@
           },
           {
             "shape": "cylinder",
-            "color": "#ffffff",
+            "color": "#fff",
             "scale": [
               0.85,
               0.5,
@@ -237,7 +239,7 @@
         "neutral"
       ],
       "count": 15,
-      "scale": 0.6,
+      "scale": 1,
       "model": {
         "path": "models/Crab.glb",
         "position": [
@@ -255,6 +257,7 @@
           1,
           1
         ],
+        "target_size": 1.6,
         "animation": null
       },
       "fallback_model": {
@@ -263,9 +266,9 @@
           {
             "shape": "box",
             "scale": [
-              2,
-              0.8,
-              1.5
+              1.2,
+              0.45,
+              0.9
             ],
             "position": [
               0,
@@ -281,12 +284,12 @@
           {
             "shape": "cylinder",
             "scale": [
-              0.2,
-              1.5,
-              0.2
+              0.12,
+              0.8,
+              0.12
             ],
             "position": [
-              1.2,
+              0.85,
               0,
               0
             ],
@@ -299,12 +302,12 @@
           {
             "shape": "cylinder",
             "scale": [
-              0.2,
-              1.5,
-              0.2
+              0.12,
+              0.8,
+              0.12
             ],
             "position": [
-              -1.2,
+              -0.85,
               0,
               0
             ],
@@ -317,14 +320,14 @@
           {
             "shape": "box",
             "scale": [
-              0.8,
-              0.8,
-              0.8
+              0.45,
+              0.45,
+              0.45
             ],
             "position": [
-              0.8,
-              0.8,
-              1
+              0.55,
+              0.7,
+              0.65
             ],
             "rotation": [
               0,
@@ -335,14 +338,14 @@
           {
             "shape": "box",
             "scale": [
-              0.8,
-              0.8,
-              0.8
+              0.45,
+              0.45,
+              0.45
             ],
             "position": [
-              -0.8,
-              0.8,
-              1
+              -0.55,
+              0.7,
+              0.65
             ],
             "rotation": [
               0,
@@ -361,7 +364,7 @@
           "y": 0,
           "z": 140
         },
-        "collision_radius": 1.2
+        "collision_radius": 0.7
       }
     },
     {
@@ -373,23 +376,7 @@
       "count": 40,
       "scale": 2,
       "model": {
-        "path": null,
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0
-        ],
-        "scale": [
-          1,
-          1,
-          1
-        ],
-        "animation": null
+        "path": null
       },
       "fallback_model": {
         "base_color": "#ff3366",
@@ -496,6 +483,250 @@
           "z": 180
         },
         "collision_radius": 2.5
+      }
+    },
+    {
+      "id": "delfino",
+      "type": "fish",
+      "tags": [
+        "neutral"
+      ],
+      "count": 3,
+      "scale": 1,
+      "model": {
+        "path": "models/Dolphin.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "target_size": 4.5,
+        "animation": null
+      },
+      "fallback_model": {
+        "base_color": "#7896aa",
+        "parts": [
+          {
+            "shape": "sphere",
+            "scale": [
+              0.7,
+              0.8,
+              2.2
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.25,
+              0.8,
+              0.25
+            ],
+            "position": [
+              0,
+              0,
+              1.9
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "behavior": {
+        "type": "swim_random",
+        "base_speed": 0.09,
+        "rotation_speed": 0.06,
+        "bounding_box": {
+          "x": 140,
+          "y": 25,
+          "z": 140
+        },
+        "collision_radius": 2.2
+      }
+    },
+    {
+      "id": "manta",
+      "type": "fish",
+      "tags": [
+        "neutral"
+      ],
+      "count": 2,
+      "scale": 1,
+      "model": {
+        "path": "models/Manta ray.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "target_size": 5,
+        "animation": null
+      },
+      "fallback_model": {
+        "base_color": "#4d6070",
+        "parts": [
+          {
+            "shape": "sphere",
+            "scale": [
+              3,
+              0.35,
+              1.4
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.3,
+              1.5,
+              0.25
+            ],
+            "position": [
+              0,
+              0,
+              1.4
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "behavior": {
+        "type": "swim_random",
+        "base_speed": 0.06,
+        "rotation_speed": 0.04,
+        "bounding_box": {
+          "x": 140,
+          "y": 30,
+          "z": 140
+        },
+        "collision_radius": 2.5
+      }
+    },
+    {
+      "id": "balena",
+      "type": "fish",
+      "tags": [
+        "neutral"
+      ],
+      "count": 1,
+      "scale": 1,
+      "model": {
+        "path": "models/Whale.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "target_size": 9,
+        "animation": null
+      },
+      "fallback_model": {
+        "base_color": "#405d73",
+        "parts": [
+          {
+            "shape": "sphere",
+            "scale": [
+              2.5,
+              1.7,
+              5
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.8,
+              1,
+              0.5
+            ],
+            "position": [
+              0,
+              0,
+              -4.3
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "behavior": {
+        "type": "swim_random",
+        "base_speed": 0.035,
+        "rotation_speed": 0.035,
+        "bounding_box": {
+          "x": 130,
+          "y": 20,
+          "z": 130
+        },
+        "collision_radius": 4,
+        "hunting_radius": 0
       }
     }
   ]
