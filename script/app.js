@@ -410,6 +410,10 @@ function animate() {
 
     renderList.forEach(entity => {
         const { mesh, behavior, target, tags } = entity;
+
+        if (entity.mixer) {
+            entity.mixer.update(delta);
+        }
         
         // Se il pesce è nascosto via UI, saltiamo i calcoli fisici e di movimento
         if (!mesh.visible) return;
