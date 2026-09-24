@@ -1,21 +1,24 @@
-# LiveAcquarium
-Next Gen Acquarium
 # 🐠 LiveAcquarium
 
-**Next Gen Aquarium** — un acquario 3D interattivo nel browser, realizzato con [Three.js](https://threejs.org/).
+**Next Gen Aquarium** — un acquario 3D interattivo nel browser, costruito con Three.js.
+
+LiveAcquarium simula un piccolo ecosistema sottomarino: predatori, prede e creature del fondale si muovono autonomamente e interagiscono tra loro.
 
 ## ✨ Funzionalità
 
-- 🦈 **Ecosistema simulato**: squali che cacciano, pesci pagliaccio che fuggono, granchi sul fondale e coralli statici
-- 🎨 **Modelli procedurali**: ogni creatura è costruita da primitive geometriche (nessun asset esterno richiesto)
-- 📡 **Configurazione esterna**: popolazione, colori e comportamenti definiti in `config.json` (con fallback interno automatico)
-- 🎛️ **Pannello di controllo live**: moltiplicatore pesci, velocità di nuoto, luce ambiente e colore dell'acqua
-- 🫧 **Atmosfera**: nebbia subacquea, particelle sospese e fondale ondulato procedurale
-- 🔄 **Respawn automatico**: le prede mangiate riappaiono altrove, così l'ecosistema resta in equilibrio
+- 🦈 **Ecosistema dinamico** — squali che inseguono le prede e pesci pagliaccio che reagiscono ai predatori
+- 🦀 **Creature del fondale** — granchi con movimento dedicato
+- 🪸 **Ambiente procedurale** — fondale ondulato, nebbia subacquea e particelle sospese
+- 🎨 **Modelli procedurali** — nessun asset 3D esterno necessario
+- ⚙️ **Configurazione esterna** — specie, popolazioni, colori e comportamenti in config.json
+- 🛟 **Fallback automatico** — configurazione interna se config.json non è disponibile
+- 🎛️ **Controlli live** — popolazione dei pesci, velocità, illuminazione e colore dell'acqua
+- ⚡ **Ottimizzazioni** — geometrie e materiali condivisi, pixel ratio limitato
+- 📱 **Responsive** — canvas e camera si adattano alla finestra
 
 ## 🚀 Avvio
 
-Apri semplicemente `index.html` in un browser moderno (serve connessione internet per il CDN di Three.js), oppure servi la cartella con un web server locale:
+È consigliato usare un web server locale perché fetch() può essere bloccato dal browser quando config.json viene caricato da file://.
 
 ```bash
 npx serve .
@@ -23,33 +26,35 @@ npx serve .
 python -m http.server 8000
 ```
 
+Poi apri l'URL mostrato dal server. È necessaria una connessione internet per caricare Three.js dal CDN.
+
+## 🎮 Controlli
+
+| Controllo | Effetto |
+|---|---|
+| Moltiplicatore pesci | Mostra una parte maggiore o minore della popolazione configurata |
+| Velocità nuoto | Modifica la velocità globale |
+| Luce ambiente | Regola l'illuminazione |
+| Colore acqua | Aggiorna sfondo e nebbia in tempo reale |
+
+Puoi esplorare la scena con il mouse tramite OrbitControls.
+
 ## ⚙️ Configurazione
 
-Il file `config.json` definisce ambiente e abitanti dell'acquario:
+config.json definisce ambiente e abitanti. Tra i campi principali: environment.water_color, environment.fog_density, environment.ambient_light, entities[].count, entities[].tags, entities[].fallback_model e entities[].behavior.
 
-
-| Campo                       | Descrizione                                                                                                         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `environment`               | Colore acqua, densità nebbia, intensità luci                                                                        |
-| `entities[].id`             | Nome identificativo della specie                                                                                    |
-| `entities[].count`          | Numero di esemplari                                                                                                 |
-| `entities[].tags`           | Ruolo ecologico: `predator`, `prey`, `neutral`, `obstacle`                                                          |
-| `entities[].fallback_model` | Parti geometriche (shape, scala, posizione, rotazione, colore)                                                      |
-| `entities[].behavior`       | Tipo di movimento (`swim_random`, `zigzag`, `bottom_crawl`, `static`), velocità, bounding box, raggi di caccia/fuga |
-
-
-Se `config.json` non è raggiungibile, l'app usa una configurazione interna equivalente.
+Comportamenti disponibili: swim_random, zigzag, bottom_crawl e static.
 
 ## 🧱 Struttura
 
-```
+```text
 LiveAcquarium/
-├── index.html      # UI e import map Three.js
-├── config.json     # Configurazione ambiente e specie
+├── index.html      # Interfaccia e import map Three.js
+├── config.json     # Configurazione dell'ecosistema
 └── script/
-    └── app.js      # Motore 3D, comportamenti e fisica
+    └── app.js      # Motore 3D, AI comportamentale e simulazione
 ```
 
 ## 📄 Licenza
 
-Distribuito sotto licenza [Apache 2.0](LICENSE).
+Distribuito sotto licenza Apache 2.0.
