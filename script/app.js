@@ -115,6 +115,7 @@ let renderList = [];
 let particles, floorMesh, ambientLightRef; 
 const clock = new THREE.Clock();
 const simParams = { speedMultiplier: 1.0, populationMultiplier: 1.0 };
+let currentEnvironment = { ...defaultConfig.environment };
 
 const sharedGeometries = {
     cone: new THREE.ConeGeometry(0.5, 1, 8),
@@ -299,7 +300,10 @@ function setupUI() {
 
             Object.keys(typeCounts).forEach(id => {
                 const group = typeCounts[id];
-                const targetVisibleCount = Math.round(group.length * simParams.populationMultiplier);
+                const targetVisibleCount = Math.max(0, Math.min(
+                    group.length,
+                    Math.round(group.length * simParams.populationMultiplier)
+                ));
                 group.forEach((entity, index) => {
                     const shouldBeVisible = index < targetVisibleCount;
                     entity.mesh.visible = shouldBeVisible;
@@ -321,7 +325,7 @@ function setupUI() {
     const lightInput = document.getElementById('lightIntensity');
     if (lightInput && ambientLightRef) {
         lightInput.addEventListener('input', (e) => {
-            ambientLightRef.intensity = (e.target.value / 100) * defaultConfig.environment.ambient_light;
+            ambientLightRef.intensity = (e.target.value / 100) * Number(currentEnvironment.ambient_light);
         });
     }
 
@@ -534,7 +538,10 @@ function setRandomTarget(targetVec, box) {
 function steerTowards(mesh, targetPoint, rotationSpeed) {
     const targetRotation = new THREE.Matrix4().lookAt(mesh.position, targetPoint, mesh.up);
     const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(targetRotation);
-    mesh.quaternion.slerp(targetQuaternion, rotationSpeed * simParams.speedMultiplier);
+    mesh.quaternion.slerp(
+        targetQuaternion,
+        Math.min(1, Math.max(0, rotationSpeed * simParams.speedMultiplier))
+    );
 }
 
 function onWindowResize() {
