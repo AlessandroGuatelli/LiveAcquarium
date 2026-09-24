@@ -795,44 +795,62 @@ function updateEntities(delta, time) {
             chooseSwimmingTarget(entity, behavior, profile);
         }
 
-        let closestTarget = null;
-        let closestDistance = Infinity;
-
-        for (const other of renderList) {
-            if (other === entity || !other.mesh.visible) continue;
-
-            const distance = mesh.position.distanceTo(other.mesh.position);
-            if (distance >= closestDistance) continue;
-
-            const wantsPrey = (behavior.target_tags || []).some(tag => other.tags.includes(tag));
-            const wantsFlee = (behavior.flee_tags || []).some(tag => other.tags.includes(tag));
-
-            if (wantsPrey || wantsFlee) {
-                closestDistance = distance;
-                closestTarget = { mesh: other.mesh, prey: wantsPrey, predator: wantsFlee };
+        // Il predatore insegue una preda reale e anticipa la sua traiettoria.
+        const hunt = getPredatorTarget(entity, behavior);
+        if (hunt) {
+            if (hunt.distance <= (Number(behavior.eat_distance) || 0)) {
+                entitiesToRespawn.push(hunt.entity.mesh);
+            } else {
+                target.copy(hunt.position);
+                speed *= 1.22;
+                overrideTarget = true;
             }
         }
 
-        if (closestTarget) {
-            if (closestTarget.prey && closestDistance < (behavior.hunting_radius || 0)) {
-                if (closestDistance <= (behavior.eat_distance || 0)) {
-                    entitiesToRespawn.push(closestTarget.mesh);
-                } else {
-                    target.copy(closestTarget.mesh.position);
-                    speed *= 1.15;
-                    overrideTarget = true;
-                }
-            }
+        // La preda fugge dal predatore più vicino con una vera virata laterale.
+        let nearestPredator = null;
+        let nearestPredatorDistance = Infinity;
 
-            if (closestTarget.predator && closestDistance < (behavior.flee_radius || 0)) {
-                const flee = new THREE.Vector3().subVectors(mesh.position, closestTarget.mesh.position);
-                flee.y *= 0.45;
-                flee.normalize();
-                target.copy(mesh.position).add(flee.multiplyScalar(20));
+        for (const other of renderList) {
+            if (other === entity || !other.mesh.visible) continue;
+            if (!(behavior.flee_tags || []).some(tag => other.tags.includes(tag))) continue;
+
+            const distance = mesh.position.distanceTo(other.mesh.position);
+            if (distance < nearestPredatorDistance) {
+                nearestPredatorDistance = distance;
+                nearestPredator = other;
+            }
+        }
+
+        if (nearestPredator && nearestPredatorDistance < (Number(behavior.flee_radius) || 0)) {
+            const away = new THREE.Vector3().subVectors(
+                mesh.position,
+                nearestPredator.mesh.position
+            );
+            away.y *= 0.7;
+
+            if (away.lengthSq() > 0.0001) {
+                away.normalize();
+                const lateral = new THREE.Vector3(-away.z, 0, away.x)
+                    .multiplyScalar(Math.sin(time * 2.2 + entity.seed) * 0.55);
+
+                target.copy(mesh.position)
+                    .addScaledVector(away, 24)
+                    .add(lateral);
+
                 target.y = Math.max(target.y, getFloorHeight(target.x, target.z) + 8);
                 speed *= 1.35;
                 overrideTarget = true;
             }
+        }
+
+        // Il branco evita sovrapposizioni ma resta compatto.
+        if (!hunt && entity.id !== 'squalo_bianco') {
+            applySchoolingAndAvoidance(
+                entity,
+                target,
+                entity.id.startsWith('pesce_') ? 2.8 : 3.5
+            );
         }
 
         if (behavior.type === 'bottom_crawl') {
@@ -855,7 +873,6 @@ function updateEntities(delta, time) {
 
         // Orientamento morbido + roll/pitch organici applicati come offset quaternion,
         // senza sovrascrivere gli assi Euler della direzione di marcia.
-        const phase = time * (1.2 + profile.sway * 10) + entity.seed;
         steerTowards(mesh, target, profile.turn, true);
         mesh.translateZ(cruise);
 
@@ -899,35 +916,73 @@ function setRandomTarget(target, box = { x: 100, y: 20, z: 100 }) {
     target.set(x, y, z);
 }
 
-function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true, bank = 0, pitch = 0, phase = 0) {
+function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true) {
     const direction = new THREE.Vector3().subVectors(target, mesh.position);
-    if (swimming) direction.y *= 0.65;
-
+    if (swimming) direction.y *= 0.7;
     if (direction.lengthSq() < 0.0001) return;
-
     direction.normalize();
 
-    // I GLB marini sono orientati verso -Z dopo la rotazione definita in config.
-    // Allineiamo quindi il -Z locale alla direzione di marcia, evitando che pesci,
-    // squali e cetacei nuotino all'indietro.
-    const forward = new THREE.Vector3(0, 0, -1);
+    // I GLB marini usano +Z come direzione visiva di marcia.
+    // Il Group ruota verso il target e avanza sul proprio asse: niente retromarcia.
+    const forward = new THREE.Vector3(0, 0, 1);
     const desired = new THREE.Quaternion().setFromUnitVectors(forward, direction);
-
     mesh.quaternion.slerp(
         desired,
-        Math.min(1, Math.max(0.015, Number(rotationSpeed) * simParams.speedMultiplier))
+        Math.min(1, Math.max(0.02, Number(rotationSpeed) * simParams.speedMultiplier))
     );
+}
 
-    if (swimming) {
-        const roll = new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 0, 1),
-            Math.sin(phase) * bank
-        );
-        const pitchOffset = new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(1, 0, 0),
-            Math.cos(phase * 0.7) * pitch
-        );
-        mesh.quaternion.multiply(roll).multiply(pitchOffset);
+function getPredatorTarget(entity, behavior) {
+    const huntingRadius = Number(behavior.hunting_radius) || 0;
+    if (huntingRadius <= 0) return null;
+
+    let best = null;
+    let bestScore = Infinity;
+
+    for (const other of renderList) {
+        if (other === entity || !other.mesh.visible) continue;
+        if (!(behavior.target_tags || []).some(tag => other.tags.includes(tag))) continue;
+
+        const offset = new THREE.Vector3().subVectors(other.mesh.position, entity.mesh.position);
+        const distance = offset.length();
+        if (distance > huntingRadius) continue;
+
+        // Anticipazione: il predatore vira verso un punto davanti alla preda.
+        const preySpeed = Number(other.behavior?.base_speed) || 0.04;
+        const lead = THREE.MathUtils.clamp(distance / Math.max(0.1, preySpeed * 90), 0, 8);
+        const predicted = other.mesh.position.clone();
+        const preyDirection = new THREE.Vector3(0, 0, 1)
+            .applyQuaternion(other.mesh.quaternion)
+            .normalize();
+        predicted.addScaledVector(preyDirection, lead);
+
+        const score = distance + lead * 0.35;
+        if (score < bestScore) {
+            bestScore = score;
+            best = { entity: other, position: predicted, distance };
+        }
+    }
+    return best;
+}
+
+function applySchoolingAndAvoidance(entity, target, separation = 3) {
+    const steer = new THREE.Vector3();
+    let nearby = 0;
+
+    for (const other of renderList) {
+        if (other === entity || !other.mesh.visible || other.type !== 'fish') continue;
+        const offset = new THREE.Vector3().subVectors(entity.mesh.position, other.mesh.position);
+        const distance = offset.length();
+
+        if (distance < separation && distance > 0.01) {
+            steer.add(offset.normalize().multiplyScalar((separation - distance) / separation));
+            nearby++;
+        }
+    }
+
+    if (nearby > 0) {
+        steer.normalize();
+        target.addScaledVector(steer, 5);
     }
 }
 
