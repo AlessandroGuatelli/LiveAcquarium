@@ -233,6 +233,214 @@
       }
     },
     {
+      "id": "pesce_variante_1",
+      "type": "fish",
+      "tags": [
+        "prey"
+      ],
+      "count": 20,
+      "scale": 1,
+      "model": {
+        "path": "models/Fish-BEcU9rjiAq.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "target_size": 2.2,
+        "animation": null
+      },
+      "fallback_model": {
+        "base_color": "#ff7700",
+        "parts": [
+          {
+            "shape": "sphere",
+            "scale": [
+              0.8,
+              1.5,
+              2
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "color": "#fff",
+            "scale": [
+              0.85,
+              0.5,
+              1.8
+            ],
+            "position": [
+              0,
+              0,
+              0.5
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.1,
+              1,
+              0.8
+            ],
+            "position": [
+              0,
+              0,
+              -1.2
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "behavior": {
+        "type": "zigzag",
+        "base_speed": 0.07,
+        "rotation_speed": 0.12,
+        "bounding_box": {
+          "x": 120,
+          "y": 25,
+          "z": 120
+        },
+        "collision_radius": 1,
+        "flee_radius": 30,
+        "flee_tags": [
+          "predator"
+        ]
+      }
+    },
+    {
+      "id": "pesce_variante_2",
+      "type": "fish",
+      "tags": [
+        "prey"
+      ],
+      "count": 20,
+      "scale": 1,
+      "model": {
+        "path": "models/Fish-XWl86YFtpF.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "target_size": 2.2,
+        "animation": null
+      },
+      "fallback_model": {
+        "base_color": "#ff7700",
+        "parts": [
+          {
+            "shape": "sphere",
+            "scale": [
+              0.8,
+              1.5,
+              2
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "color": "#fff",
+            "scale": [
+              0.85,
+              0.5,
+              1.8
+            ],
+            "position": [
+              0,
+              0,
+              0.5
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.1,
+              1,
+              0.8
+            ],
+            "position": [
+              0,
+              0,
+              -1.2
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "behavior": {
+        "type": "zigzag",
+        "base_speed": 0.07,
+        "rotation_speed": 0.12,
+        "bounding_box": {
+          "x": 120,
+          "y": 25,
+          "z": 120
+        },
+        "collision_radius": 1,
+        "flee_radius": 30,
+        "flee_tags": [
+          "predator"
+        ]
+      }
+    },
+    {
       "id": "granchio",
       "type": "crustacean",
       "tags": [
