@@ -571,6 +571,30 @@ function updateHUD() {
             ' · Coralli: ' + (counts.plant || 0);
     }
 
+    const speciesEl = document.getElementById('speciesDetail');
+    if (speciesEl) {
+        const species = {};
+        renderList.forEach(entity => {
+            if (!entity.mesh.visible) return;
+            species[entity.id] = (species[entity.id] || 0) + 1;
+        });
+        const labels = {
+            squalo_bianco: '🦈 Squali',
+            pesce_pagliaccio: '🐠 Pagliacci',
+            pesce_variante_1: '🐟 Variante 1',
+            pesce_variante_2: '🐟 Variante 2',
+            granchio: '🦀 Granchi',
+            delfino: '🐬 Delfini',
+            manta: '🌊 Mante',
+            balena: '🐋 Balena',
+            corallo: '🪸 Coralli'
+        };
+        speciesEl.textContent = Object.entries(labels)
+            .filter(([id]) => species[id])
+            .map(([id,label]) => label + ': ' + species[id])
+            .join(' · ') || 'Nessuna creatura visibile';
+    }
+
     const modelStatus = document.getElementById('modelStatus');
     if (modelStatus) {
         modelStatus.textContent = failedCount
