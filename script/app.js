@@ -238,13 +238,13 @@ async function parseConfig(config) {
                 }
                 modelDiagnostics.set(entityDef.model?.path || entityDef.id, collectModelDiagnostics(model));
 
-                if (modelAsset.animations?.length) {
+                // Le animazioni embedded dei GLB marini non vengono riprodotte automaticamente:
+                // alcuni asset contengono clip di prova che fanno ruotare il modello su se stesso.
+                // La locomozione viene gestita dal sistema fisico dell'acquario.
+                const requested = entityDef.model?.animation;
+                if (requested && modelAsset.animations?.length) {
                     mixer = new THREE.AnimationMixer(model);
-                    const requested = entityDef.model?.animation;
-                    const clip = requested
-                        ? THREE.AnimationClip.findByName(modelAsset.animations, requested)
-                        : modelAsset.animations[0];
-
+                    const clip = THREE.AnimationClip.findByName(modelAsset.animations, requested);
                     if (clip) mixer.clipAction(clip).play();
                 }
             } else {
@@ -273,7 +273,6 @@ async function parseConfig(config) {
             }
 
             group.position.set(x, y, z);
-            group.rotation.y = Math.random() * Math.PI * 2;
             scene.add(group);
 
             renderList.push({
@@ -537,7 +536,15 @@ async function centerCreatures() {
         const x = (Math.random() - 0.5) * Math.min(Number(box.x) || 80, 60);
         const z = (Math.random() - 0.5) * Math.min(Number(box.z) || 80, 60);
         const floorY = getFloorHeight(x, z);
-        entity.mesh.position.set(x, floorY + (entity.type === 'crustacean' ? 0.2 : 8 + Math.random() * 10), z);
+
+        if (entity.type === 'crustacean' || entity.type === 'plant') {
+            entity.mesh.position.set(x, floorY, z);
+        } else {
+            const profile = getMotionProfile(entity);
+            const minY = floorY + (entity.id === 'manta' ? 8 : 10);
+            entity.mesh.position.set(x, minY + Math.random() * 8, z);
+        }
+
         entity.target.copy(entity.mesh.position);
     }
 }
@@ -738,8 +745,12 @@ function updateEntities(delta, time) {
         // I coralli restano fermi ma hanno una piccola oscillazione organica.
         if (behavior.type === 'static') {
             if (entity.type === 'plant') {
-                mesh.rotation.z = Math.sin(time * 0.8 + entity.seed) * 0.035;
-                mesh.rotation.x = Math.cos(time * 0.65 + entity.seed) * 0.025;
+                // Il punto di origine del corallo è il suo appoggio: lo manteniamo
+                // sempre esattamente sul fondale anche quando il terreno è ondulato.
+                const coralFloor = getFloorHeight(mesh.position.x, mesh.position.z);
+                mesh.position.y = coralFloor;
+                mesh.rotation.z = Math.sin(time * 0.8 + entity.seed) * 0.012;
+                mesh.rotation.x = Math.cos(time * 0.65 + entity.seed) * 0.008;
             }
             continue;
         }
@@ -845,7 +856,7 @@ function updateEntities(delta, time) {
         // Orientamento morbido + roll/pitch organici applicati come offset quaternion,
         // senza sovrascrivere gli assi Euler della direzione di marcia.
         const phase = time * (1.2 + profile.sway * 10) + entity.seed;
-        steerTowards(mesh, target, profile.turn, true, profile.bank, profile.bob, phase);
+        steerTowards(mesh, target, profile.turn, true);
         mesh.translateZ(cruise);
 
         // Corregge dolcemente la quota verso il target, evitando salti verticali.
