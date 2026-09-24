@@ -214,11 +214,13 @@ function init() {
             return res.json();
         })
         .then(async data => {
+            applyEnvironment(data.environment);
             await parseConfig(data);
             setupUI();
         })
         .catch(async err => {
             console.warn(err.message + " Uso fallback.");
+            applyEnvironment(defaultConfig.environment);
             await parseConfig(defaultConfig);
             setupUI();
         });
