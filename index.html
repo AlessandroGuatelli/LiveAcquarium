@@ -25,6 +25,7 @@ button:hover{background:rgba(255,255,255,.14)}
 #stats.hidden{display:none}
 .stat-line{display:flex;justify-content:space-between;gap:16px;margin:4px 0}
 #modelStatus{margin-top:8px;color:#aee8ff}
+#speciesDetail{margin-top:6px;line-height:1.4;color:#c7f3ff}#modelDiagnostics{margin-top:8px;font-size:10px;line-height:1.4;color:#d8f7ff;max-height:120px;overflow:auto}#modelDiagnostics.hidden{display:none}
 #pauseBadge{position:fixed;left:50%;top:18px;transform:translateX(-50%);padding:7px 12px;border-radius:999px;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;z-index:20}
 #pauseBadge.active{opacity:1}
 #mobileHudToggle{display:none;position:fixed;right:12px;top:12px;z-index:30;width:44px;height:44px;border-radius:50%;font-size:22px;background:rgba(0,15,30,.78)}
@@ -74,6 +75,9 @@ button:hover{background:rgba(255,255,255,.14)}
       <button id="btnReset">↺ Reset camera</button>
       <button id="btnFullscreen">⛶ Fullscreen</button>
       <button id="btnStats">☷ HUD</button>
+      <button id="btnCenter">◎ Centra creature</button>
+      <button id="btnRepopulate">🐟 Ripopola</button>
+      <button id="btnDiagnostics">🔎 Diagnostica GLB</button>
     </div>
     <div class="mobile-actions">
       <button id="mobilePause" data-pause-label>Ⅱ Pausa</button>
@@ -86,8 +90,11 @@ button:hover{background:rgba(255,255,255,.14)}
   <div class="stat-line"><span>Entità visibili</span><strong id="statTotal">0</strong></div>
   <div class="stat-line"><span>Modelli GLB</span><strong id="statModels">0</strong></div>
   <div class="stat-line"><span>Dispositivo</span><strong id="statMode">—</strong></div>
+  <div class="stat-line"><span>FPS</span><strong id="statFps">0</strong></div>
   <div id="statDetail">Pesci: 0 · Granchi: 0 · Coralli: 0</div>
+  <div id="speciesDetail">Caricamento specie…</div>
   <div id="modelStatus">Caricamento modelli…</div>
+  <div id="modelDiagnostics" class="hidden"></div>
 </div>
 
 <div id="pauseBadge">⏸ Acquario in pausa</div>
