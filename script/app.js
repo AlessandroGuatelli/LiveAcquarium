@@ -96,7 +96,8 @@ const defaultConfig = {
                 base_color: "#ff3366",
                 parts: [
                     { shape: "cylinder", scale: [0.5, 3, 0.5], position: [0, 1.5, 0], rotation: [0, 0, 0] },
-                    { shape: "cylinder", scale: [0.4, 2, 0.4], position: [0.8, 2, 0], rotation: [0, 0, -0.6] },
+  
+                  { shape: "cylinder", scale: [0.4, 2, 0.4], position: [0.8, 2, 0], rotation: [0, 0, -0.6] },
                     { shape: "cylinder", scale: [0.4, 2, 0.4], position: [-0.8, 1.5, 0.5], rotation: [0.5, 0, 0.5] },
                     { shape: "sphere", scale: [1, 1, 1], position: [0, 3.2, 0], rotation: [0, 0, 0], color: "#ff77aa" },
                     { shape: "sphere", scale: [0.8, 0.8, 0.8], position: [1.5, 2.8, 0], rotation: [0, 0, 0], color: "#ff77aa" }
@@ -161,7 +162,8 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;\n    renderer.toneMappingExposure = 1.0;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -193,7 +195,8 @@ function init() {
     
     floorGeo.computeVertexNormals();
     const floorMat = new THREE.MeshStandardMaterial({ color: 0xe0cda9, roughness: 0.8, metalness: 0.1 });
-    floorMesh = new THREE.Mesh(floorGeo, floorMat);
+ 
+   floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.position.y = -18;
     scene.add(floorMesh);
@@ -296,6 +299,7 @@ async function parseConfig(config) {
                     const partMesh = new THREE.Mesh(geo, mat);
 
                     if (partDef.scale) partMesh.scale.set(...partDef.scale);
+
                     if (partDef.position) partMesh.position.set(...partDef.position);
                     if (partDef.rotation) partMesh.rotation.set(...partDef.rotation);
 
@@ -350,7 +354,8 @@ async function loadModelAsset(modelDefinition) {
             console.warn(`Impossibile caricare il modello "${modelPath}". Uso il fallback procedurale.`, error);
             return null;
         });
-        modelCache.set(modelPath, loadPromise);
+        modelCache.set(modelPath,
+ loadPromise);
     }
 
     return modelCache.get(modelPath);
@@ -556,7 +561,8 @@ function animate() {
                 entity.timer += delta;
                 if (!isOverridingTarget && entity.timer > entity.zigzagPeriod) {
                     entity.timer = 0;
-                    setRandomTarget(target, behavior.bounding_box);
+      
+              setRandomTarget(target, behavior.bounding_box);
                 }
                 steerTowards(mesh, target, behavior.rotation_speed);
                 mesh.translateZ(speed);
@@ -609,7 +615,8 @@ function setRandomTarget(targetVec, box) {
     let ry = (Math.random() - 0.5) * box.y;
     
     const tFloorY = getFloorHeight(rx, rz);
-    if (ry < tFloorY + 2) {
+    if (ry
+ < tFloorY + 2) {
         ry = tFloorY + 2 + Math.random() * 10;
     }
     targetVec.set(rx, ry, rz);
