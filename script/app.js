@@ -13,6 +13,12 @@ let paused = false;
 let lowPowerMode = false;
 let showStats = true;
 let modelStatusReady = false;
+let modelDiagnostics = new Map();
+let showDiagnostics = false;
+let showLabels = false;
+let fps = 0;
+let frameCounter = 0;
+let fpsTimer = 0;
 
 const clock = new THREE.Clock();
 const simParams = {
@@ -224,7 +230,9 @@ async function parseConfig(config) {
             if (modelAsset?.scene) {
                 const model = SkeletonUtils.clone(modelAsset.scene);
                 prepareModel(model, entityDef.model || {});
+                model.updateMatrixWorld(true);
                 group.add(model);
+                modelDiagnostics.set(entityDef.model?.path || entityDef.id, collectModelDiagnostics(model));
 
                 if (modelAsset.animations?.length) {
                     mixer = new THREE.AnimationMixer(model);
@@ -300,6 +308,22 @@ function hasRenderableGeometry(model) {
         }
     });
     return meshCount > 0 && geometryCount > 0;
+}
+
+function collectModelDiagnostics(model) {
+    let meshes = 0;
+    let skinned = 0;
+    let vertices = 0;
+    model.traverse(node => {
+        if (!node.isMesh) return;
+        meshes++;
+        if (node.isSkinnedMesh) skinned++;
+        if (node.geometry?.attributes?.position) vertices += node.geometry.attributes.position.count;
+    });
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    return { meshes, skinned, vertices, size: [size.x, size.y, size.z] };
 }
 
 function prepareModel(model, modelConfig) {
@@ -427,6 +451,13 @@ function setupUI() {
         showStats = !showStats;
         document.getElementById('stats').classList.toggle('hidden', !showStats);
     });
+    document.getElementById('btnDiagnostics')?.addEventListener('click', () => {
+        showDiagnostics = !showDiagnostics;
+        document.getElementById('modelDiagnostics')?.classList.toggle('hidden', !showDiagnostics);
+        updateHUD();
+    });
+    document.getElementById('btnCenter')?.addEventListener('click', centerCreatures);
+    document.getElementById('btnRepopulate')?.addEventListener('click', repopulateCreatures);
 }
 
 function setupMobileUI() {
@@ -456,7 +487,29 @@ function resetCamera() {
     controls.update();
 }
 
-async function toggleFullscreen() {
+async function centerCreatures() {
+    for (const entity of renderList) {
+        const box = entity.behavior?.bounding_box || {x:80,y:25,z:80};
+        const x = (Math.random() - 0.5) * Math.min(Number(box.x) || 80, 60);
+        const z = (Math.random() - 0.5) * Math.min(Number(box.z) || 80, 60);
+        const floorY = getFloorHeight(x, z);
+        entity.mesh.position.set(x, floorY + (entity.type === 'crustacean' ? 0.2 : 8 + Math.random() * 10), z);
+        entity.target.copy(entity.mesh.position);
+    }
+}
+
+function repopulateCreatures() {
+    for (const entity of renderList) entity.mesh.visible = true;
+    simParams.populationMultiplier = 1;
+    const slider = document.getElementById('fishScale');
+    if (slider) slider.value = '100';
+    const value = document.getElementById('valFish');
+    if (value) value.textContent = '1.0x';
+    centerCreatures();
+    updateHUD();
+}
+
+function toggleFullscreen() {
     try {
         if (!document.fullscreenElement) {
             await document.documentElement.requestFullscreen();
@@ -519,6 +572,17 @@ function updateHUD() {
             ? '⚠ ' + failedCount + ' modello/i non trovato/i: uso fallback'
             : (modelStatusReady ? '✓ Modelli caricati' : 'Caricamento modelli…');
     }
+
+    const fpsEl = document.getElementById('statFps');
+    if (fpsEl) fpsEl.textContent = String(fps);
+    const diag = document.getElementById('modelDiagnostics');
+    if (diag && showDiagnostics) {
+        const rows = [];
+        for (const [path, d] of modelDiagnostics) {
+            rows.push(path.split('/').pop() + ': ' + d.meshes + ' mesh · ' + d.vertices + ' vertici · ' + d.size.map(v => v.toFixed(1)).join('×'));
+        }
+        diag.textContent = rows.length ? rows.join(' | ') : 'Nessun GLB diagnostico';
+    }
 }
 
 function animate() {
@@ -526,6 +590,12 @@ function animate() {
 
     const delta = Math.min(clock.getDelta(), 0.05);
     const time = clock.getElapsedTime();
+    frameCounter++;
+    if (time - fpsTimer >= 0.5) {
+        fps = Math.round(frameCounter / Math.max(0.5, time - fpsTimer));
+        frameCounter = 0;
+        fpsTimer = time;
+    }
 
     if (!paused) {
         if (particles) {
