@@ -842,13 +842,11 @@ function updateEntities(delta, time) {
         const arrivalFactor = THREE.MathUtils.clamp(distanceToTarget / 18, 0.35, 1);
         const cruise = speed * THREE.MathUtils.lerp(0.72, 1, arrivalFactor);
 
-        steerTowards(mesh, target, profile.turn, true);
-        mesh.translateZ(cruise);
-
-        // Piccolo "roll" e bobbing, più evidente sulle specie grandi.
+        // Orientamento morbido + roll/pitch organici applicati come offset quaternion,
+        // senza sovrascrivere gli assi Euler della direzione di marcia.
         const phase = time * (1.2 + profile.sway * 10) + entity.seed;
-        mesh.rotation.z = Math.sin(phase) * profile.bank;
-        mesh.rotation.x += (Math.cos(phase * 0.7) * profile.bob * delta);
+        steerTowards(mesh, target, profile.turn, true, profile.bank, profile.bob, phase);
+        mesh.translateZ(cruise);
 
         // Corregge dolcemente la quota verso il target, evitando salti verticali.
         if (profile.vertical > 0) {
@@ -890,7 +888,7 @@ function setRandomTarget(target, box = { x: 100, y: 20, z: 100 }) {
     target.set(x, y, z);
 }
 
-function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true) {
+function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true, bank = 0, pitch = 0, phase = 0) {
     const direction = new THREE.Vector3().subVectors(target, mesh.position);
     if (swimming) direction.y *= 0.65;
 
@@ -908,6 +906,18 @@ function steerTowards(mesh, target, rotationSpeed = 0.08, swimming = true) {
         desired,
         Math.min(1, Math.max(0.015, Number(rotationSpeed) * simParams.speedMultiplier))
     );
+
+    if (swimming) {
+        const roll = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 0, 1),
+            Math.sin(phase) * bank
+        );
+        const pitchOffset = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(1, 0, 0),
+            Math.cos(phase * 0.7) * pitch
+        );
+        mesh.quaternion.multiply(roll).multiply(pitchOffset);
+    }
 }
 
 function resizeRenderer() {
