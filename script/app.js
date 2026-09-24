@@ -159,7 +159,7 @@ function init() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));\n    renderer.outputColorSpace = THREE.SRGBColorSpace;\n    renderer.toneMapping = THREE.ACESFilmicToneMapping;\n    renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -224,6 +224,22 @@ function init() {
         });
 
     window.addEventListener('resize', onWindowResize);
+}
+
+function applyEnvironment(environment = {}) {
+    currentEnvironment = {
+        ...defaultConfig.environment,
+        ...environment
+    };
+
+    const waterColor = new THREE.Color(currentEnvironment.water_color);
+    scene.background = waterColor;
+    scene.fog.color = waterColor;
+    scene.fog.density = Number(currentEnvironment.fog_density) || defaultConfig.environment.fog_density;
+
+    if (ambientLightRef) {
+        ambientLightRef.intensity = Number(currentEnvironment.ambient_light) || defaultConfig.environment.ambient_light;
+    }
 }
 
 async function parseConfig(config) {
