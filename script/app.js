@@ -123,6 +123,15 @@ const sharedGeometries = {
     sphere: new THREE.SphereGeometry(0.5, 16, 16)
 };
 
+// Cache dei materiali condivisi: riduce il numero di materiali e draw call
+const materialCache = {};
+function getMaterial(color) {
+    if (!materialCache[color]) {
+        materialCache[color] = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.2 });
+    }
+    return materialCache[color];
+}
+
 function getFloorHeight(worldX, worldZ) {
     const px = worldX;
     const py = -worldZ;
@@ -224,10 +233,7 @@ function parseConfig(config) {
                 
                 entityDef.fallback_model.parts.forEach(partDef => {
                     const geo = sharedGeometries[partDef.shape] || sharedGeometries.box;
-                    const mat = new THREE.MeshStandardMaterial({ 
-                        color: partDef.color || baseColor,
-                        roughness: 0.3, metalness: 0.2
-                    });
+                    const mat = getMaterial(partDef.color || baseColor);
                     
                     const partMesh = new THREE.Mesh(geo, mat);
                     
@@ -266,7 +272,8 @@ function parseConfig(config) {
                 behavior: entityDef.behavior,
                 target: entityGroup.position.clone(),
                 seed: Math.random() * 100,
-                timer: 0
+                timer: 0,
+                zigzagPeriod: 1 + Math.random() * 2
             });
         }
     });
@@ -364,7 +371,7 @@ function animate() {
             hitWall = true;
         }
         if (Math.abs(mesh.position.z) > halfZ) {
-            forward.z *= -1; 
+            forward.z *= -1;
             mesh.position.z = Math.sign(mesh.position.z) * halfZ;
             hitWall = true;
         }
@@ -463,7 +470,7 @@ function animate() {
 
             case "zigzag":
                 entity.timer += delta;
-                if (!isOverridingTarget && entity.timer > (1 + Math.random())) {
+                if (!isOverridingTarget && entity.timer > entity.zigzagPeriod) {
                     entity.timer = 0;
                     setRandomTarget(target, behavior.bounding_box);
                 }
@@ -487,11 +494,24 @@ function animate() {
 
     if (entitiesToRemove.length > 0) {
         renderList = renderList.filter(entity => {
-            if (entitiesToRemove.includes(entity.mesh)) {
-                scene.remove(entity.mesh); 
-                return false; 
+            if (!entitiesToRemove.includes(entity.mesh)) return true;
+
+            // Le prede riappaiono in un punto casuale: l'ecosistema resta in equilibrio
+            if (entity.tags.includes("prey")) {
+                const box = entity.behavior.bounding_box;
+                const rx = (Math.random() - 0.5) * box.x;
+                const rz = (Math.random() - 0.5) * box.z;
+                let ry = (Math.random() - 0.5) * box.y;
+                const fY = getFloorHeight(rx, rz);
+                if (ry < fY + 2) ry = fY + 5;
+                entity.mesh.position.set(rx, ry, rz);
+                entity.target.copy(entity.mesh.position);
+                entity.mesh.visible = true;
+                return true;
             }
-            return true;
+
+            scene.remove(entity.mesh);
+            return false;
         });
     }
 
