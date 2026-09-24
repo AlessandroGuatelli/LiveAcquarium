@@ -243,8 +243,12 @@ async function parseConfig(config) {
             group.scale.setScalar(logicalScale);
 
             const box = entityDef.behavior?.bounding_box || { x: 100, y: 20, z: 100 };
-            const x = (Math.random() - 0.5) * box.x;
-            const z = (Math.random() - 0.5) * box.z;
+            // I pesci partono nella zona centrale della vasca, sicuramente inquadrata
+            // dalla camera iniziale; dopo possono esplorare tutta la bounding box.
+            const spawnWidth = entityDef.type === 'fish' ? Math.min(Number(box.x) || 100, 80) : (Number(box.x) || 100);
+            const spawnDepth = entityDef.type === 'fish' ? Math.min(Number(box.z) || 100, 80) : (Number(box.z) || 100);
+            const x = (Math.random() - 0.5) * spawnWidth;
+            const z = (Math.random() - 0.5) * spawnDepth;
             let y = (Math.random() - 0.5) * box.y;
             const floorY = getFloorHeight(x, z);
 
@@ -284,6 +288,18 @@ async function parseConfig(config) {
     }
 
     modelStatusReady = true;
+}
+
+function hasRenderableGeometry(model) {
+    let meshCount = 0;
+    let geometryCount = 0;
+    model.traverse(node => {
+        if (node.isMesh) {
+            meshCount++;
+            if (node.geometry?.attributes?.position?.count > 0) geometryCount++;
+        }
+    });
+    return meshCount > 0 && geometryCount > 0;
 }
 
 function prepareModel(model, modelConfig) {
@@ -344,6 +360,9 @@ async function loadModelAsset(modelDefinition) {
         // percorsi come "models/Manta ray.glb" con spazi nel nome.
         const resolvedPath = new URL(modelPath, document.baseURI).href;
         const asset = await modelLoader.loadAsync(resolvedPath);
+        if (!asset?.scene || !hasRenderableGeometry(asset.scene)) {
+            throw new Error('GLB caricato ma senza geometria renderizzabile');
+        }
         modelCache.set(modelPath, asset);
         loadedModelPaths.add(modelPath);
         return asset;
