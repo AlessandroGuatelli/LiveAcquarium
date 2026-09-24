@@ -229,9 +229,13 @@ async function parseConfig(config) {
 
             if (modelAsset?.scene) {
                 const model = SkeletonUtils.clone(modelAsset.scene);
+                const recoveredSkinnedMeshes = recoverSkinnedModelForRendering(model);
                 prepareModel(model, entityDef.model || {});
                 model.updateMatrixWorld(true);
                 group.add(model);
+                if (recoveredSkinnedMeshes > 0) {
+                    console.info('GLB rig recuperato in rendering statico:', entityDef.model?.path, recoveredSkinnedMeshes);
+                }
                 modelDiagnostics.set(entityDef.model?.path || entityDef.id, collectModelDiagnostics(model));
 
                 if (modelAsset.animations?.length) {
@@ -308,6 +312,41 @@ function hasRenderableGeometry(model) {
         }
     });
     return meshCount > 0 && geometryCount > 0;
+}
+
+function recoverSkinnedModelForRendering(model) {
+    // I GLB delle creature marine sono skinned/rigged. Per garantire il rendering
+    // anche su browser/GPU che gestiscono male il clone dello skeleton, manteniamo
+    // la geometria ma sostituiamo ogni SkinnedMesh con un Mesh statico in bind pose.
+    // La locomozione dell'acquario continua a funzionare a livello di Group.
+    const replacements = [];
+
+    model.traverse(node => {
+        if (!node.isSkinnedMesh || !node.parent) return;
+
+        const replacement = new THREE.Mesh(node.geometry, node.material);
+        replacement.name = node.name + '_static_render';
+        replacement.position.copy(node.position);
+        replacement.quaternion.copy(node.quaternion);
+        replacement.scale.copy(node.scale);
+        replacement.visible = true;
+        replacement.frustumCulled = false;
+        replacement.castShadow = node.castShadow;
+        replacement.receiveShadow = node.receiveShadow;
+
+        if (node.morphTargetInfluences) {
+            replacement.morphTargetInfluences = [...node.morphTargetInfluences];
+        }
+
+        replacements.push({ oldNode: node, replacement });
+    });
+
+    for (const { oldNode, replacement } of replacements) {
+        oldNode.parent.add(replacement);
+        oldNode.parent.remove(oldNode);
+    }
+
+    return replacements.length;
 }
 
 function collectModelDiagnostics(model) {
