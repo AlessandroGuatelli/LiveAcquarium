@@ -338,6 +338,11 @@ function prepareModel(model, modelConfig) {
             const materials = Array.isArray(node.material) ? node.material : [node.material];
             materials.forEach(material => {
                 material.side = THREE.DoubleSide;
+                material.transparent = false;
+                material.opacity = 1;
+                material.alphaTest = 0;
+                material.depthWrite = true;
+                material.depthTest = true;
                 material.needsUpdate = true;
             });
         }
