@@ -213,13 +213,13 @@ function init() {
             if (!res.ok) throw new Error("File config.json non trovato.");
             return res.json();
         })
-        .then(data => {
-            parseConfig(data);
+        .then(async data => {
+            await parseConfig(data);
             setupUI();
         })
-        .catch(err => {
+        .catch(async err => {
             console.warn(err.message + " Uso fallback.");
-            parseConfig(defaultConfig);
+            await parseConfig(defaultConfig);
             setupUI();
         });
 
