@@ -3,102 +3,498 @@
     "water_color": "#006994",
     "fog_density": 0.005,
     "ambient_light": 0.8,
-    "directional_light": 2.0
+    "directional_light": 2
   },
   "entities": [
     {
       "id": "squalo_bianco",
       "type": "fish",
-      "tags": ["predator"],
+      "tags": [
+        "predator"
+      ],
       "count": 2,
       "scale": 1.5,
+      "model": {
+        "path": "models/Shark.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#7a8a9a",
         "parts": [
-          { "shape": "sphere", "scale": [1, 1.2, 3.5], "position": [0, 0, 0], "rotation": [0, 0, 0] },
-          { "shape": "cone", "scale": [0.5, 2, 0.2], "position": [0, 0, -2.5], "rotation": [1.57, 0, 0] },
-          { "shape": "cone", "scale": [0.3, 1.2, 0.8], "position": [0, 1.2, 0.5], "rotation": [0, 0, 0] },
-          { "shape": "cone", "scale": [1.5, 0.2, 0.6], "position": [0, -0.5, 1], "rotation": [0, 0, 0] }
+          {
+            "shape": "sphere",
+            "scale": [
+              1,
+              1.2,
+              3.5
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.5,
+              2,
+              0.2
+            ],
+            "position": [
+              0,
+              0,
+              -2.5
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.3,
+              1.2,
+              0.8
+            ],
+            "position": [
+              0,
+              1.2,
+              0.5
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              1.5,
+              0.2,
+              0.6
+            ],
+            "position": [
+              0,
+              -0.5,
+              1
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
         ]
       },
       "behavior": {
         "type": "swim_random",
         "base_speed": 0.12,
         "rotation_speed": 0.05,
-        "bounding_box": { "x": 140, "y": 30, "z": 140 },
-        "collision_radius": 3.0,
+        "bounding_box": {
+          "x": 140,
+          "y": 30,
+          "z": 140
+        },
+        "collision_radius": 3,
         "hunting_radius": 40,
         "eat_distance": 4.5,
-        "target_tags": ["prey"]
+        "target_tags": [
+          "prey"
+        ]
       }
     },
     {
       "id": "pesce_pagliaccio",
       "type": "fish",
-      "tags": ["prey"],
+      "tags": [
+        "prey"
+      ],
       "count": 40,
       "scale": 0.6,
+      "model": {
+        "path": "models/Fish.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#ff7700",
         "parts": [
-          { "shape": "sphere", "scale": [0.8, 1.5, 2], "position": [0, 0, 0], "rotation": [0, 0, 0] },
-          { "shape": "cylinder", "color": "#ffffff", "scale": [0.85, 0.5, 1.8], "position": [0, 0, 0.5], "rotation": [1.57, 0, 0] },
-          { "shape": "cone", "scale": [0.1, 1, 0.8], "position": [0, 0, -1.2], "rotation": [1.57, 0, 0] }
+          {
+            "shape": "sphere",
+            "scale": [
+              0.8,
+              1.5,
+              2
+            ],
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "color": "#ffffff",
+            "scale": [
+              0.85,
+              0.5,
+              1.8
+            ],
+            "position": [
+              0,
+              0,
+              0.5
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cone",
+            "scale": [
+              0.1,
+              1,
+              0.8
+            ],
+            "position": [
+              0,
+              0,
+              -1.2
+            ],
+            "rotation": [
+              1.57,
+              0,
+              0
+            ]
+          }
         ]
       },
       "behavior": {
         "type": "zigzag",
         "base_speed": 0.07,
         "rotation_speed": 0.12,
-        "bounding_box": { "x": 120, "y": 25, "z": 120 },
-        "collision_radius": 1.0,
+        "bounding_box": {
+          "x": 120,
+          "y": 25,
+          "z": 120
+        },
+        "collision_radius": 1,
         "flee_radius": 30,
-        "flee_tags": ["predator"]
+        "flee_tags": [
+          "predator"
+        ]
       }
     },
     {
       "id": "granchio",
       "type": "crustacean",
-      "tags": ["neutral"],
+      "tags": [
+        "neutral"
+      ],
       "count": 15,
       "scale": 0.6,
+      "model": {
+        "path": "models/Crab.glb",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#cc3300",
         "parts": [
-          { "shape": "box", "scale": [2, 0.8, 1.5], "position": [0, 0.4, 0], "rotation": [0, 0, 0] },
-          { "shape": "cylinder", "scale": [0.2, 1.5, 0.2], "position": [1.2, 0, 0], "rotation": [0, 0, 0.5] },
-          { "shape": "cylinder", "scale": [0.2, 1.5, 0.2], "position": [-1.2, 0, 0], "rotation": [0, 0, -0.5] },
-          { "shape": "box", "scale": [0.8, 0.8, 0.8], "position": [0.8, 0.8, 1], "rotation": [0, 0, 0] },
-          { "shape": "box", "scale": [0.8, 0.8, 0.8], "position": [-0.8, 0.8, 1], "rotation": [0, 0, 0] }
+          {
+            "shape": "box",
+            "scale": [
+              2,
+              0.8,
+              1.5
+            ],
+            "position": [
+              0,
+              0.4,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "scale": [
+              0.2,
+              1.5,
+              0.2
+            ],
+            "position": [
+              1.2,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0.5
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "scale": [
+              0.2,
+              1.5,
+              0.2
+            ],
+            "position": [
+              -1.2,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              -0.5
+            ]
+          },
+          {
+            "shape": "box",
+            "scale": [
+              0.8,
+              0.8,
+              0.8
+            ],
+            "position": [
+              0.8,
+              0.8,
+              1
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "box",
+            "scale": [
+              0.8,
+              0.8,
+              0.8
+            ],
+            "position": [
+              -0.8,
+              0.8,
+              1
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
         ]
       },
       "behavior": {
         "type": "bottom_crawl",
         "base_speed": 0.04,
         "rotation_speed": 0.08,
-        "bounding_box": { "x": 140, "y": 0, "z": 140 },
+        "bounding_box": {
+          "x": 140,
+          "y": 0,
+          "z": 140
+        },
         "collision_radius": 1.2
       }
     },
     {
       "id": "corallo",
       "type": "plant",
-      "tags": ["obstacle"],
+      "tags": [
+        "obstacle"
+      ],
       "count": 40,
-      "scale": 2.0,
+      "scale": 2,
+      "model": {
+        "path": null,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#ff3366",
         "parts": [
-          { "shape": "cylinder", "scale": [0.5, 3, 0.5], "position": [0, 1.5, 0], "rotation": [0, 0, 0] },
-          { "shape": "cylinder", "scale": [0.4, 2, 0.4], "position": [0.8, 2, 0], "rotation": [0, 0, -0.6] },
-          { "shape": "cylinder", "scale": [0.4, 2, 0.4], "position": [-0.8, 1.5, 0.5], "rotation": [0.5, 0, 0.5] },
-          { "shape": "sphere", "scale": [1, 1, 1], "position": [0, 3.2, 0], "rotation": [0, 0, 0], "color": "#ff77aa" },
-          { "shape": "sphere", "scale": [0.8, 0.8, 0.8], "position": [1.5, 2.8, 0], "rotation": [0, 0, 0], "color": "#ff77aa" }
+          {
+            "shape": "cylinder",
+            "scale": [
+              0.5,
+              3,
+              0.5
+            ],
+            "position": [
+              0,
+              1.5,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "scale": [
+              0.4,
+              2,
+              0.4
+            ],
+            "position": [
+              0.8,
+              2,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              -0.6
+            ]
+          },
+          {
+            "shape": "cylinder",
+            "scale": [
+              0.4,
+              2,
+              0.4
+            ],
+            "position": [
+              -0.8,
+              1.5,
+              0.5
+            ],
+            "rotation": [
+              0.5,
+              0,
+              0.5
+            ]
+          },
+          {
+            "shape": "sphere",
+            "scale": [
+              1,
+              1,
+              1
+            ],
+            "position": [
+              0,
+              3.2,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#ff77aa"
+          },
+          {
+            "shape": "sphere",
+            "scale": [
+              0.8,
+              0.8,
+              0.8
+            ],
+            "position": [
+              1.5,
+              2.8,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "color": "#ff77aa"
+          }
         ]
       },
       "behavior": {
         "type": "static",
-        "bounding_box": { "x": 180, "y": 0, "z": 180 },
+        "bounding_box": {
+          "x": 180,
+          "y": 0,
+          "z": 180
+        },
         "collision_radius": 2.5
       }
     }

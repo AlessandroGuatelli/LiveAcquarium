@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // --- CONFIGURAZIONE DI FALLBACK INTERNA ---
 const defaultConfig = {
@@ -158,6 +160,7 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;\n    renderer.toneMapping = THREE.ACESFilmicToneMapping;\n    renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -211,37 +214,90 @@ function init() {
             if (!res.ok) throw new Error("File config.json non trovato.");
             return res.json();
         })
-        .then(data => {
-            parseConfig(data);
+        .then(async data => {
+            applyEnvironment(data.environment);
+            await parseConfig(data);
             setupUI();
         })
-        .catch(err => {
+        .catch(async err => {
             console.warn(err.message + " Uso fallback.");
-            parseConfig(defaultConfig);
+            applyEnvironment(defaultConfig.environment);
+            await parseConfig(defaultConfig);
             setupUI();
         });
 
     window.addEventListener('resize', onWindowResize);
 }
 
-function parseConfig(config) {
-    config.entities.forEach(entityDef => {
+function applyEnvironment(environment = {}) {
+    currentEnvironment = {
+        ...defaultConfig.environment,
+        ...environment
+    };
+
+    const waterColor = new THREE.Color(currentEnvironment.water_color);
+    scene.background = waterColor;
+    scene.fog.color = waterColor;
+    scene.fog.density = Number(currentEnvironment.fog_density) || defaultConfig.environment.fog_density;
+
+    if (ambientLightRef) {
+        ambientLightRef.intensity = Number(currentEnvironment.ambient_light) || defaultConfig.environment.ambient_light;
+    }
+}
+
+async function parseConfig(config) {
+    const entityAssets = await Promise.all(
+        config.entities.map(async entityDef => ({
+            entityDef,
+            modelAsset: await loadModelAsset(entityDef.model)
+        }))
+    );
+
+    entityAssets.forEach(({ entityDef, modelAsset }) => {
         for (let i = 0; i < entityDef.count; i++) {
             const entityGroup = new THREE.Group();
-            
-            if (entityDef.fallback_model && entityDef.fallback_model.parts) {
+            let mixer = null;
+
+            if (modelAsset) {
+                const model = SkeletonUtils.clone(modelAsset.scene);
+                const modelConfig = entityDef.model || {};
+
+                if (Array.isArray(modelConfig.position)) {
+                    model.position.set(...modelConfig.position);
+                }
+                if (Array.isArray(modelConfig.rotation)) {
+                    model.rotation.set(...modelConfig.rotation);
+                }
+                if (Array.isArray(modelConfig.scale)) {
+                    model.scale.set(...modelConfig.scale);
+                }
+
+                entityGroup.add(model);
+
+                if (modelAsset.animations?.length) {
+                    mixer = new THREE.AnimationMixer(model);
+                    const animationName = modelConfig.animation;
+                    const clip = animationName
+                        ? THREE.AnimationClip.findByName(modelAsset.animations, animationName)
+                        : modelAsset.animations[0];
+
+                    if (clip) {
+                        mixer.clipAction(clip).play();
+                    }
+                }
+            } else if (entityDef.fallback_model?.parts) {
                 const baseColor = entityDef.fallback_model.base_color;
-                
+
                 entityDef.fallback_model.parts.forEach(partDef => {
                     const geo = sharedGeometries[partDef.shape] || sharedGeometries.box;
                     const mat = getMaterial(partDef.color || baseColor);
-                    
+
                     const partMesh = new THREE.Mesh(geo, mat);
-                    
+
                     if (partDef.scale) partMesh.scale.set(...partDef.scale);
                     if (partDef.position) partMesh.position.set(...partDef.position);
                     if (partDef.rotation) partMesh.rotation.set(...partDef.rotation);
-                    
+
                     entityGroup.add(partMesh);
                 });
             }
@@ -251,7 +307,7 @@ function parseConfig(config) {
             const box = entityDef.behavior.bounding_box;
             const startX = (Math.random() - 0.5) * box.x;
             const startZ = (Math.random() - 0.5) * box.z;
-            
+
             let startY = (Math.random() - 0.5) * box.y;
             if (entityDef.behavior.type === "bottom_crawl" || entityDef.behavior.type === "static") {
                 startY = getFloorHeight(startX, startZ);
@@ -259,10 +315,10 @@ function parseConfig(config) {
                 const floorY = getFloorHeight(startX, startZ);
                 if (startY < floorY + 2) startY = floorY + 5;
             }
-            
+
             entityGroup.position.set(startX, startY, startZ);
             entityGroup.rotation.y = Math.random() * Math.PI * 2;
-            
+
             scene.add(entityGroup);
 
             renderList.push({
@@ -274,10 +330,29 @@ function parseConfig(config) {
                 target: entityGroup.position.clone(),
                 seed: Math.random() * 100,
                 timer: 0,
-                zigzagPeriod: 1 + Math.random() * 2
+                zigzagPeriod: 1 + Math.random() * 2,
+                mixer
             });
         }
     });
+}
+
+async function loadModelAsset(modelDefinition) {
+    const modelPath = typeof modelDefinition === "string"
+        ? modelDefinition
+        : modelDefinition?.path;
+
+    if (!modelPath) return null;
+
+    if (!modelCache.has(modelPath)) {
+        const loadPromise = modelLoader.loadAsync(modelPath).catch(error => {
+            console.warn(`Impossibile caricare il modello "${modelPath}". Uso il fallback procedurale.`, error);
+            return null;
+        });
+        modelCache.set(modelPath, loadPromise);
+    }
+
+    return modelCache.get(modelPath);
 }
 
 // --- SETUP CONTROLLI UI (SLIDER E COLOR PICKER) ---
@@ -354,6 +429,10 @@ function animate() {
 
     renderList.forEach(entity => {
         const { mesh, behavior, target, tags } = entity;
+
+        if (entity.mixer) {
+            entity.mixer.update(delta);
+        }
         
         // Se il pesce è nascosto via UI, saltiamo i calcoli fisici e di movimento
         if (!mesh.visible) return;
