@@ -12,6 +12,13 @@
       "tags": ["predator"],
       "count": 2,
       "scale": 1.5,
+      "model": {
+        "path": null,
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#7a8a9a",
         "parts": [
@@ -38,6 +45,13 @@
       "tags": ["prey"],
       "count": 40,
       "scale": 0.6,
+      "model": {
+        "path": null,
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#ff7700",
         "parts": [
@@ -62,6 +76,13 @@
       "tags": ["neutral"],
       "count": 15,
       "scale": 0.6,
+      "model": {
+        "path": null,
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#cc3300",
         "parts": [
@@ -86,6 +107,13 @@
       "tags": ["obstacle"],
       "count": 40,
       "scale": 2.0,
+      "model": {
+        "path": null,
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [1, 1, 1],
+        "animation": null
+      },
       "fallback_model": {
         "base_color": "#ff3366",
         "parts": [
