@@ -89,7 +89,7 @@ const defaultConfig = {
             type: "plant",
             tags: ["obstacle"],
             count: 40,
-            scale: 2.0, // Ingranditi per essere più visibili
+            scale: 2.0,
             fallback_model: {
                 base_color: "#ff3366",
                 parts: [
@@ -112,9 +112,9 @@ const defaultConfig = {
 // --- VARIABILI GLOBALI ---
 let scene, camera, renderer, controls;
 let renderList = []; 
-let particles, floorMesh; 
+let particles, floorMesh, ambientLightRef; 
 const clock = new THREE.Clock();
-const simParams = { speedMultiplier: 1.0 };
+const simParams = { speedMultiplier: 1.0, populationMultiplier: 1.0 };
 
 const sharedGeometries = {
     cone: new THREE.ConeGeometry(0.5, 1, 8),
@@ -123,16 +123,12 @@ const sharedGeometries = {
     sphere: new THREE.SphereGeometry(0.5, 16, 16)
 };
 
-// Funzione matematica assoluta per calcolare l'altezza delle dune 
-// (Più sicura ed estremamente più veloce del Raycaster)
 function getFloorHeight(worldX, worldZ) {
     const px = worldX;
-    const py = -worldZ; // Inversione data dalla rotazione su X del piano
-    
+    const py = -worldZ;
     const wave1 = Math.sin(px * 0.02) * 1.5;
     const wave2 = Math.cos(py * 0.03) * 2.0;
     const noise = Math.sin(px * 0.1 + py * 0.1) * 0.5; 
-    
     return -18 + wave1 + wave2 + noise;
 }
 
@@ -161,8 +157,8 @@ function init() {
     const hemiLight = new THREE.HemisphereLight(0x44aaff, 0x001133, 1.2);
     scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, defaultConfig.environment.ambient_light);
-    scene.add(ambientLight);
+    ambientLightRef = new THREE.AmbientLight(0xffffff, defaultConfig.environment.ambient_light);
+    scene.add(ambientLightRef);
     
     const dirLight = new THREE.DirectionalLight(0xffffff, defaultConfig.environment.directional_light);
     dirLight.position.set(50, 100, 50); 
@@ -175,7 +171,6 @@ function init() {
     for (let i = 0; i < posAttribute.count; i++) {
         const x = posAttribute.getX(i);
         const y = posAttribute.getY(i);
-        // Utilizziamo la stessa identica matematica della collisione
         const wave1 = Math.sin(x * 0.02) * 1.5;
         const wave2 = Math.cos(y * 0.03) * 2.0;
         const noise = Math.sin(x * 0.1 + y * 0.1) * 0.5; 
@@ -189,7 +184,7 @@ function init() {
     floorMesh.position.y = -18;
     scene.add(floorMesh);
 
-    // Sistema Particellare
+    // Particelle
     const particleCount = 1500;
     const particleGeo = new THREE.BufferGeometry();
     const particlePos = new Float32Array(particleCount * 3);
@@ -200,15 +195,20 @@ function init() {
     particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
 
+    // Fetch del JSON con fallback automatico
     fetch('config.json')
         .then(res => {
             if (!res.ok) throw new Error("File config.json non trovato.");
             return res.json();
         })
-        .then(data => parseConfig(data))
+        .then(data => {
+            parseConfig(data);
+            setupUI();
+        })
         .catch(err => {
             console.warn(err.message + " Uso fallback.");
             parseConfig(defaultConfig);
+            setupUI();
         });
 
     window.addEventListener('resize', onWindowResize);
@@ -246,25 +246,21 @@ function parseConfig(config) {
             const startZ = (Math.random() - 0.5) * box.z;
             
             let startY = (Math.random() - 0.5) * box.y;
-            
-            // Forza i coralli e i granchi sul fondale in modo infallibile
             if (entityDef.behavior.type === "bottom_crawl" || entityDef.behavior.type === "static") {
                 startY = getFloorHeight(startX, startZ);
             } else {
-                // Se è un pesce, assicurati che non nasca sepolto nella sabbia
                 const floorY = getFloorHeight(startX, startZ);
                 if (startY < floorY + 2) startY = floorY + 5;
             }
             
             entityGroup.position.set(startX, startY, startZ);
-            
-            // Randomizza la rotazione iniziale
             entityGroup.rotation.y = Math.random() * Math.PI * 2;
             
             scene.add(entityGroup);
 
             renderList.push({
-                id: entityDef.id + "_" + i,
+                id: entityDef.id,
+                type: entityDef.type,
                 tags: entityDef.tags || [],
                 mesh: entityGroup,
                 behavior: entityDef.behavior,
@@ -274,6 +270,63 @@ function parseConfig(config) {
             });
         }
     });
+}
+
+// --- SETUP CONTROLLI UI (SLIDER E COLOR PICKER) ---
+function setupUI() {
+    // 1. Moltiplicatore Pesci
+    const fishScaleInput = document.getElementById('fishScale');
+    if (fishScaleInput) {
+        fishScaleInput.addEventListener('input', (e) => {
+            simParams.populationMultiplier = e.target.value / 100;
+            document.getElementById('valFish').innerText = simParams.populationMultiplier.toFixed(1) + "x";
+            
+            // Conta quanti elementi ci sono per tipo e mostra/nascondi in base al moltiplicatore
+            const typeCounts = {};
+            renderList.forEach(entity => {
+                if (entity.type === "fish") {
+                    if (!typeCounts[entity.id]) typeCounts[entity.id] = [];
+                    typeCounts[entity.id].push(entity);
+                }
+            });
+
+            Object.keys(typeCounts).forEach(id => {
+                const group = typeCounts[id];
+                const targetVisibleCount = Math.round(group.length * simParams.populationMultiplier);
+                group.forEach((entity, index) => {
+                    const shouldBeVisible = index < targetVisibleCount;
+                    entity.mesh.visible = shouldBeVisible;
+                });
+            });
+        });
+    }
+
+    // 2. Velocità di Nuoto
+    const swimSpeedInput = document.getElementById('swimSpeed');
+    if (swimSpeedInput) {
+        swimSpeedInput.addEventListener('input', (e) => {
+            simParams.speedMultiplier = e.target.value / 100;
+            document.getElementById('valSpeed').innerText = simParams.speedMultiplier.toFixed(1) + "x";
+        });
+    }
+
+    // 3. Luce Ambiente
+    const lightInput = document.getElementById('lightIntensity');
+    if (lightInput && ambientLightRef) {
+        lightInput.addEventListener('input', (e) => {
+            ambientLightRef.intensity = (e.target.value / 100) * defaultConfig.environment.ambient_light;
+        });
+    }
+
+    // 4. Colore Acqua / Nebbia
+    const colorInput = document.getElementById('waterColor');
+    if (colorInput) {
+        colorInput.addEventListener('input', (e) => {
+            const newColor = new THREE.Color(e.target.value);
+            scene.background = newColor;
+            scene.fog.color = newColor;
+        });
+    }
 }
 
 function animate() {
@@ -291,16 +344,16 @@ function animate() {
     renderList.forEach(entity => {
         const { mesh, behavior, target, tags } = entity;
         
+        // Se il pesce è nascosto via UI, saltiamo i calcoli fisici e di movimento
+        if (!mesh.visible) return;
         if (behavior.type === "static") return;
 
         let speed = behavior.base_speed * simParams.speedMultiplier;
         let isOverridingTarget = false;
         const myRadius = behavior.collision_radius || 1.0;
 
-        // Vettore direzionale corrente dell'oggetto
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
 
-        // --- GESTIONE DEI LIMITI CON RIMBALZO ELASTICO SUI BORDI ---
         const halfX = behavior.bounding_box.x / 2;
         const halfZ = behavior.bounding_box.z / 2;
         let hitWall = false;
@@ -316,16 +369,12 @@ function animate() {
             hitWall = true;
         }
 
-        // --- GESTIONE COLLISIONE CON IL FONDALE ---
         const floorY = getFloorHeight(mesh.position.x, mesh.position.z);
         
         if (behavior.type !== "bottom_crawl") {
             const minAllowedHeight = floorY + myRadius;
             if (mesh.position.y < minAllowedHeight) {
-                // Spingi il pesce fuori dalla sabbia
                 mesh.position.y = minAllowedHeight;
-                
-                // Se puntava verso il basso, inverti l'asse Y per farlo rimbalzare
                 if (forward.y < 0) {
                     forward.y *= -1;
                     hitWall = true; 
@@ -339,16 +388,14 @@ function animate() {
             isOverridingTarget = true;
         }
 
-        // --- SISTEMA DI COLLISIONE TRA MODELLI ---
         const pushVector = new THREE.Vector3(); 
         let closestDist = Infinity;
         let closestTarget = null;
 
         renderList.forEach(other => {
-            if (other === entity) return;
+            if (other === entity || !other.mesh.visible) return;
             
             const dist = mesh.position.distanceTo(other.mesh.position);
-            
             const otherRadius = other.behavior.collision_radius || 1.0;
             const minAllowedDist = myRadius + otherRadius;
 
@@ -381,7 +428,6 @@ function animate() {
             target.add(pushVector); 
         }
 
-        // --- AZIONI PREDATORE/PREDA ---
         if (closestTarget && !hitWall) {
             if (closestTarget.isPrey && closestDist < behavior.hunting_radius) {
                 if (closestDist <= behavior.eat_distance) {
@@ -398,14 +444,13 @@ function animate() {
                 target.copy(mesh.position).add(fleeVector.multiplyScalar(15));
                 
                 const fFloorY = getFloorHeight(target.x, target.z);
-                if (target.y < fFloorY + 2) target.y = fFloorY + 5; // Evita di fuggire scavando
+                if (target.y < fFloorY + 2) target.y = fFloorY + 5;
                 
                 speed *= 1.8; 
                 isOverridingTarget = true;
             }
         }
 
-        // --- SISTEMA DI MOVIMENTO ---
         switch (behavior.type) {
             case "swim_random":
                 if (!isOverridingTarget && mesh.position.distanceTo(target) < 5) {
@@ -430,11 +475,8 @@ function animate() {
                 if (!isOverridingTarget && mesh.position.distanceTo(target) < 3) {
                     setRandomTarget(target, behavior.bounding_box);
                 }
-                
-                // Aggiorna l'altezza della sabbia e incolla il granchio
                 mesh.position.y = floorY + (myRadius * 0.4); 
                 target.y = floorY; 
-                
                 steerTowards(mesh, target, behavior.rotation_speed);
                 mesh.translateZ(speed);
                 mesh.rotation.x = 0;
@@ -462,12 +504,10 @@ function setRandomTarget(targetVec, box) {
     const rz = (Math.random() - 0.5) * box.z;
     let ry = (Math.random() - 0.5) * box.y;
     
-    // Controlla l'altezza del fondale nel punto target e forza una Y superiore
     const tFloorY = getFloorHeight(rx, rz);
     if (ry < tFloorY + 2) {
         ry = tFloorY + 2 + Math.random() * 10;
     }
-    
     targetVec.set(rx, ry, rz);
 }
 
