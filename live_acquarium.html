@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acquario 3D Interattivo</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            color: white; 
+        }
+        #ui-container { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            background: rgba(0, 15, 30, 0.75); 
+            padding: 20px; 
+            border-radius: 12px; 
+            backdrop-filter: blur(8px); 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.15); 
+            width: 260px;
+            z-index: 10;
+        }
+        h2 { 
+            margin-top: 0; 
+            font-size: 18px; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid rgba(255,255,255,0.2); 
+            padding-bottom: 10px; 
+        }
+        .control-group { 
+            margin-bottom: 18px; 
+        }
+        .control-group label { 
+            display: flex; 
+            justify-content: space-between;
+            margin-bottom: 8px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            color: #aaddff;
+        }
+        input[type=range] { 
+            width: 100%; 
+            cursor: pointer; 
+            accent-color: #00aaff;
+        }
+        input[type=color] { 
+            width: 100%; 
+            height: 35px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            background: transparent;
+        }
+        #canvas-container { 
+            width: 100vw; 
+            height: 100vh; 
+            display: block; 
+        }
+    </style>
+
+    <!-- Mappatura moduli ES6 per Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="ui-container">
+        <h2>Pannello Acquario</h2>
+        
+        <div class="control-group">
+            <label><span>Moltiplicatore Pesci</span> <span id="valFish">1.0x</span></label>
+            <input type="range" id="fishScale" min="0" max="200" value="100">
+        </div>
+        
+        <div class="control-group">
+            <label><span>Velocità Nuoto</span> <span id="valSpeed">1.0x</span></label>
+            <input type="range" id="swimSpeed" min="0" max="200" value="100">
+        </div>
+        
+        <div class="control-group">
+            <label><span>Luce Ambiente</span></label>
+            <input type="range" id="lightIntensity" min="10" max="200" value="100">
+        </div>
+        
+        <div class="control-group">
+            <label><span>Colore Acqua (Nebbia)</span></label>
+            <input type="color" id="waterColor" value="#002b3d">
+        </div>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <!-- Importazione del file logico separato come modulo -->
+    <script type="module" src="script/app.js"></script>
+</body>
+</html>

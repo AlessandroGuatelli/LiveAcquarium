@@ -1,0 +1,84 @@
+{
+  "environment": {
+    "water_color": "#001e30",
+    "fog_density": 0.012,
+    "ambient_light": 1.2,
+    "directional_light": 2.5
+  },
+  "entities": [
+    {
+      "id": "squalo_bianco",
+      "type": "fish",
+      "tags": ["predator"],
+      "model_url": "models/squalo.glb",
+      "count": 2,
+      "scale": 1.5,
+      "fallback_model": {
+        "base_color": "#555555",
+        "parts": [
+          { "shape": "sphere", "scale": [1, 1.2, 3.5], "position": [0, 0, 0], "rotation": [0, 0, 0], "desc": "Corpo affusolato" },
+          { "shape": "cone", "scale": [0.5, 2, 0.2], "position": [0, 0, -2.5], "rotation": [1.57, 0, 0], "desc": "Coda verticale" },
+          { "shape": "cone", "scale": [0.3, 1.2, 0.8], "position": [0, 1.2, 0.5], "rotation": [0, 0, 0], "desc": "Pinna dorsale" },
+          { "shape": "cone", "scale": [1.5, 0.2, 0.6], "position": [0, -0.5, 1], "rotation": [0, 0, 0], "desc": "Pinne pettorali" }
+        ]
+      },
+      "behavior": {
+        "type": "swim_random",
+        "base_speed": 0.12,
+        "rotation_speed": 0.05,
+        "bounding_box": { "x": 100, "y": 40, "z": 100 },
+        "hunting_radius": 35,
+        "eat_distance": 4.0,
+        "target_tags": ["prey"]
+      }
+    },
+    {
+      "id": "pesce_pagliaccio",
+      "type": "fish",
+      "tags": ["prey"],
+      "model_url": "models/pagliaccio.glb",
+      "count": 25,
+      "scale": 0.6,
+      "fallback_model": {
+        "base_color": "#ff6600",
+        "parts": [
+          { "shape": "sphere", "scale": [0.8, 1.5, 2], "position": [0, 0, 0], "rotation": [0, 0, 0] },
+          { "shape": "cylinder", "color": "#ffffff", "scale": [0.85, 0.5, 1.8], "position": [0, 0, 0.5], "rotation": [1.57, 0, 0], "desc": "Striscia bianca centrale" },
+          { "shape": "cone", "scale": [0.1, 1, 0.8], "position": [0, 0, -1.2], "rotation": [1.57, 0, 0], "desc": "Coda" }
+        ]
+      },
+      "behavior": {
+        "type": "zigzag",
+        "base_speed": 0.07,
+        "rotation_speed": 0.12,
+        "bounding_box": { "x": 80, "y": 30, "z": 80 },
+        "flee_radius": 25,
+        "flee_tags": ["predator"]
+      }
+    },
+    {
+      "id": "granchio_eremita",
+      "type": "crustacean",
+      "tags": ["neutral"],
+      "model_url": "models/granchio.glb",
+      "count": 8,
+      "scale": 0.5,
+      "fallback_model": {
+        "base_color": "#cc3300",
+        "parts": [
+          { "shape": "box", "scale": [2, 0.8, 1.5], "position": [0, 0.4, 0], "rotation": [0, 0, 0], "desc": "Corpo (Carapace)" },
+          { "shape": "cylinder", "scale": [0.2, 1.5, 0.2], "position": [1.2, 0, 0], "rotation": [0, 0, 0.5], "desc": "Zampa dx" },
+          { "shape": "cylinder", "scale": [0.2, 1.5, 0.2], "position": [-1.2, 0, 0], "rotation": [0, 0, -0.5], "desc": "Zampa sx" },
+          { "shape": "box", "scale": [0.8, 0.8, 0.8], "position": [0.8, 0.8, 1], "rotation": [0, 0, 0], "desc": "Chela dx" },
+          { "shape": "box", "scale": [0.8, 0.8, 0.8], "position": [-0.8, 0.8, 1], "rotation": [0, 0, 0], "desc": "Chela sx" }
+        ]
+      },
+      "behavior": {
+        "type": "bottom_crawl",
+        "base_speed": 0.03,
+        "rotation_speed": 0.08,
+        "bounding_box": { "x": 80, "y": 0, "z": 80 }
+      }
+    }
+  ]
+}
