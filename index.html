@@ -11,7 +11,7 @@ html,body,#canvas-container{width:100%;height:100%;margin:0}
 body{overflow:hidden;background:#000;color:#fff;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
 #canvas-container{position:fixed;inset:0;touch-action:none}
 #aquarium-canvas{display:block;width:100%;height:100%}
-#ui-container{position:fixed;top:18px;left:18px;width:min(310px,calc(100vw - 36px));max-height:calc(100dvh - 36px);overflow:auto;padding:18px;background:rgba(0,15,30,.78);border:1px solid rgba(255,255,255,.15);border-radius:16px;backdrop-filter:blur(12px);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
+#ui-container{position:fixed;top:18px;left:18px;width:min(330px,calc(100vw - 36px));max-height:calc(100dvh - 36px);overflow:auto;padding:18px;background:rgba(0,15,30,.78);border:1px solid rgba(255,255,255,.15);border-radius:16px;backdrop-filter:blur(12px);box-shadow:0 12px 35px rgba(0,0,0,.35);z-index:10}
 #ui-container.collapsed .panel-content{display:none}
 h2{font-size:18px;margin:0 0 14px}
 .control-group{margin:0 0 14px}
@@ -69,10 +69,20 @@ button:hover{background:rgba(255,255,255,.14)}
       <label><span>Colore acqua</span></label>
       <input type="color" id="waterColor" value="#006994">
     </div>
+    <div class="control-group">
+      <label><span>Densità rocce</span><span id="valRocks">25</span></label>
+      <input type="range" id="rockDensity" min="0" max="100" value="100">
+    </div>
+    <div class="control-group">
+      <label><span>Giorno / notte</span><span>100%</span></label>
+      <input type="range" id="dayNight" min="0" max="100" value="100">
+    </div>
     <div class="button-row">
       <button id="btnPause" data-pause-label>Ⅱ Pausa</button>
       <button id="btnReset">↺ Reset camera</button>
       <button id="btnFullscreen">⛶ Fullscreen</button>
+      <button id="btnParticles">✦ Particelle</button>
+      <button id="btnRandomize">⤨ Randomizza</button>
       <button id="btnStats">☷ HUD</button>
     </div>
     <div class="mobile-actions">
@@ -85,6 +95,7 @@ button:hover{background:rgba(255,255,255,.14)}
 <div id="stats">
   <div class="stat-line"><span>Entità visibili</span><strong id="statTotal">0</strong></div>
   <div class="stat-line"><span>Modelli GLB</span><strong id="statModels">0</strong></div>
+  <div class="stat-line"><span>Rocce</span><strong id="statRocks">0</strong></div>
   <div class="stat-line"><span>Dispositivo</span><strong id="statMode">—</strong></div>
   <div id="statDetail">Pesci: 0 · Granchi: 0 · Coralli: 0</div>
   <div id="modelStatus">Caricamento modelli…</div>
