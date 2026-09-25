@@ -937,5 +937,40 @@
         "hunting_radius": 0
       }
     }
-  ]
+  ],
+  "rocks": {
+    "count": 25,
+    "area": {
+      "x": 175,
+      "z": 175
+    },
+    "min_scale": 0.7,
+    "max_scale": 2.4,
+    "colors": [
+      "#45494d",
+      "#555a5e",
+      "#676c70",
+      "#3b4145"
+    ],
+    "model": {
+      "path": null,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "target_size": 3,
+      "animation": null
+    }
+  }
 }
