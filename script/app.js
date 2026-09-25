@@ -272,10 +272,13 @@ async function parseConfig(config) {
             const box = entityDef.behavior?.bounding_box || { x: 100, y: 20, z: 100 };
             // I pesci partono nella zona centrale della vasca, sicuramente inquadrata
             // dalla camera iniziale; dopo possono esplorare tutta la bounding box.
-            const spawnWidth = entityDef.type === 'fish' ? Math.min(Number(box.x) || 100, 80) : (Number(box.x) || 100);
+            const spawnWidth = entityDef.type === 'plant' ? (Number(box.x) || 230) : (entityDef.type === 'fish' ? Math.min(Number(box.x) || 100, 80) : (Number(box.x) || 100));
             const spawnDepth = entityDef.type === 'fish' ? Math.min(Number(box.z) || 100, 80) : (Number(box.z) || 100);
-            const x = (Math.random() - 0.5) * spawnWidth;
-            const z = (Math.random() - 0.5) * spawnDepth;
+            const bottomLayout = entityDef.type === 'plant'
+                ? getBottomLayout(i, overrideCount, Number(box.x) || 230, Number(box.z) || 230, 2.5)
+                : null;
+            const x = bottomLayout?.x ?? (Math.random() - 0.5) * spawnWidth;
+            const z = bottomLayout?.z ?? (Math.random() - 0.5) * spawnDepth;
             let y = (Math.random() - 0.5) * box.y;
             const floorY = getFloorHeight(x, z);
 
@@ -324,6 +327,20 @@ async function parseConfig(config) {
     populateSpeciesSelect();
     refreshPopulationUI();
     updateCreatureSelector();
+}
+
+function getBottomLayout(index, total, areaX = 230, areaZ = 230, jitter = 2) {
+    const safeTotal = Math.max(1, total);
+    const columns = Math.max(1, Math.ceil(Math.sqrt(safeTotal * areaX / Math.max(areaZ, 1))));
+    const rows = Math.max(1, Math.ceil(safeTotal / columns));
+    const col = index % columns;
+    const row = Math.floor(index / columns);
+    const xStep = areaX / columns;
+    const zStep = areaZ / rows;
+    return {
+        x: -areaX / 2 + xStep * (col + 0.5) + (Math.random() - 0.5) * Math.min(jitter, xStep * 0.35),
+        z: -areaZ / 2 + zStep * (row + 0.5) + (Math.random() - 0.5) * Math.min(jitter, zStep * 0.35)
+    };
 }
 
 function hasRenderableGeometry(model) {
@@ -513,8 +530,9 @@ async function setupRocks(config = {}) {
             group.add(createProceduralRock(rocksConfig));
         }
 
-        const x = (Math.random() - 0.5) * rocksConfig.area.x;
-        const z = (Math.random() - 0.5) * rocksConfig.area.z;
+        const layout = getBottomLayout(i, rocksConfig.count, rocksConfig.area.x, rocksConfig.area.z, 4);
+        const x = layout.x;
+        const z = layout.z;
 
         group.position.set(x, getFloorHeight(x, z), z);
         group.rotation.set(
@@ -589,9 +607,11 @@ function randomizeAquarium() {
         entity.mesh.rotation.y = Math.random() * Math.PI * 2;
     }
 
-    for (const rock of rockList) {
-        const x = (Math.random() - 0.5) * (rocksConfig?.area?.x || 170);
-        const z = (Math.random() - 0.5) * (rocksConfig?.area?.z || 170);
+    for (let i = 0; i < rockList.length; i++) {
+        const rock = rockList[i];
+        const layout = getBottomLayout(i, rockList.length, rocksConfig?.area?.x || 230, rocksConfig?.area?.z || 230, 4);
+        const x = layout.x;
+        const z = layout.z;
         rock.mesh.position.set(x, getFloorHeight(x, z), z);
         rock.mesh.rotation.set(
             (Math.random() - 0.5) * 0.25,
