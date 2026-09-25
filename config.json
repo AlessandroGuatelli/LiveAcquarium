@@ -12,7 +12,7 @@
       "tags": [
         "predator"
       ],
-      "count": 2,
+      "count": 5,
       "scale": 1,
       "model": {
         "path": "models/Shark.glb",
@@ -126,6 +126,21 @@
         "target_tags": [
           "prey"
         ]
+      },
+      "population": {
+        "initial": 5,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": [
+          "prey"
+        ]
       }
     },
     {
@@ -134,7 +149,7 @@
       "tags": [
         "prey"
       ],
-      "count": 40,
+      "count": 30,
       "scale": 1,
       "model": {
         "path": "models/Fish.glb",
@@ -230,6 +245,19 @@
         "flee_tags": [
           "predator"
         ]
+      },
+      "population": {
+        "initial": 30,
+        "min": 0,
+        "max": 120
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -334,6 +362,19 @@
         "flee_tags": [
           "predator"
         ]
+      },
+      "population": {
+        "initial": 20,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -438,6 +479,19 @@
         "flee_tags": [
           "predator"
         ]
+      },
+      "population": {
+        "initial": 20,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -446,7 +500,7 @@
       "tags": [
         "neutral"
       ],
-      "count": 15,
+      "count": 18,
       "scale": 1,
       "model": {
         "path": "models/Crab.glb",
@@ -573,6 +627,19 @@
           "z": 140
         },
         "collision_radius": 0.7
+      },
+      "population": {
+        "initial": 18,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.003,
+        "energy_decay": 0.002,
+        "stress_decay": 0.001,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -691,6 +758,19 @@
           "z": 180
         },
         "collision_radius": 2.5
+      },
+      "population": {
+        "initial": 40,
+        "min": 0,
+        "max": 160
+      },
+      "ai": {
+        "hunger_rate": 0.003,
+        "energy_decay": 0.002,
+        "stress_decay": 0.001,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -772,6 +852,19 @@
           "z": 140
         },
         "collision_radius": 2.2
+      },
+      "population": {
+        "initial": 3,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -853,6 +946,19 @@
           "z": 140
         },
         "collision_radius": 2.5
+      },
+      "population": {
+        "initial": 2,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     },
     {
@@ -935,11 +1041,24 @@
         },
         "collision_radius": 4,
         "hunting_radius": 0
+      },
+      "population": {
+        "initial": 1,
+        "min": 0,
+        "max": 100
+      },
+      "ai": {
+        "hunger_rate": 0.012,
+        "energy_decay": 0.008,
+        "stress_decay": 0.004,
+        "hunger_threshold": 65,
+        "critical_hunger": 90,
+        "preferred_food": []
       }
     }
   ],
   "rocks": {
-    "count": 25,
+    "count": 45,
     "area": {
       "x": 175,
       "z": 175
