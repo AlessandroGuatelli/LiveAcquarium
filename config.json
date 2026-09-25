@@ -758,19 +758,6 @@
           "z": 180
         },
         "collision_radius": 2.5
-      },
-      "population": {
-        "initial": 40,
-        "min": 0,
-        "max": 160
-      },
-      "ai": {
-        "hunger_rate": 0.003,
-        "energy_decay": 0.002,
-        "stress_decay": 0.001,
-        "hunger_threshold": 65,
-        "critical_hunger": 90,
-        "preferred_food": []
       }
     },
     {

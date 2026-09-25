@@ -704,7 +704,7 @@ function updateFollowCamera() {
 
 function updateCreatureAI(delta) {
     for (const entity of renderList) {
-        if (!entity.mesh.visible || !entity.ai) continue;
+        if (!isCreature(entity) || !entity.mesh.visible || !entity.ai) continue;
 
         const type = entity.type;
         const hungerRate = Number(entity.ai.hunger_rate) || (type === 'fish' ? 0.01 : 0.003);
@@ -960,11 +960,12 @@ function updateHUD() {
     const modelCount = loadedModelPaths.size;
     const failedCount = failedModelPaths.size;
     const visibleRocks = rockList.filter(rock => rock.mesh.visible).length;
-    const avgHunger = renderList.length
-        ? renderList.reduce((sum, entity) => sum + (entity.hunger || 0), 0) / renderList.length
+    const creatureList = renderList.filter(isCreature);
+    const avgHunger = creatureList.length
+        ? creatureList.reduce((sum, entity) => sum + (entity.hunger || 0), 0) / creatureList.length
         : 0;
-    const avgEnergy = renderList.length
-        ? renderList.reduce((sum, entity) => sum + (entity.energy || 0), 0) / renderList.length
+    const avgEnergy = creatureList.length
+        ? creatureList.reduce((sum, entity) => sum + (entity.energy || 0), 0) / creatureList.length
         : 0;
 
     const totalEl = document.getElementById('statTotal');
