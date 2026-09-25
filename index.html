@@ -70,10 +70,20 @@ button:hover{background:rgba(255,255,255,.14)}
       <label><span>Colore acqua</span></label>
       <input type="color" id="waterColor" value="#006994">
     </div>
+    <div class="control-group">
+      <label><span>Densità rocce</span><span id="valRocks">25</span></label>
+      <input type="range" id="rockDensity" min="0" max="100" value="100">
+    </div>
+    <div class="control-group">
+      <label><span>Giorno / notte</span><span>100%</span></label>
+      <input type="range" id="dayNight" min="0" max="100" value="100">
+    </div>
     <div class="button-row">
       <button id="btnPause" data-pause-label>Ⅱ Pausa</button>
       <button id="btnReset">↺ Reset camera</button>
       <button id="btnFullscreen">⛶ Fullscreen</button>
+      <button id="btnParticles">✦ Particelle</button>
+      <button id="btnRandomize">⤨ Randomizza</button>
       <button id="btnStats">☷ HUD</button>
       <button id="btnCenter">◎ Centra creature</button>
       <button id="btnRepopulate">🐟 Ripopola</button>
@@ -89,6 +99,7 @@ button:hover{background:rgba(255,255,255,.14)}
 <div id="stats">
   <div class="stat-line"><span>Entità visibili</span><strong id="statTotal">0</strong></div>
   <div class="stat-line"><span>Modelli GLB</span><strong id="statModels">0</strong></div>
+  <div class="stat-line"><span>Rocce</span><strong id="statRocks">0</strong></div>
   <div class="stat-line"><span>Dispositivo</span><strong id="statMode">—</strong></div>
   <div class="stat-line"><span>FPS</span><strong id="statFps">0</strong></div>
   <div id="statDetail">Pesci: 0 · Granchi: 0 · Coralli: 0</div>

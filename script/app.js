@@ -13,6 +13,9 @@ let paused = false;
 let lowPowerMode = false;
 let showStats = true;
 let modelStatusReady = false;
+let rockList = [];
+let rocksConfig = null;
+let particlesVisible = true;
 let modelDiagnostics = new Map();
 let showDiagnostics = false;
 let showLabels = false;
@@ -190,11 +193,13 @@ async function loadConfig() {
         const config = await response.json();
         applyEnvironment(config.environment);
         await parseConfig(config);
+        await setupRocks(config.rocks || {});
         updateHUD();
     } catch (error) {
         console.warn(error);
         applyEnvironment(defaultConfig.environment);
         await parseConfig(defaultConfig);
+        await setupRocks(defaultConfig.rocks || {});
         updateHUD();
     }
 }
@@ -457,11 +462,139 @@ function buildFallback(group, fallback = {}) {
     }
 }
 
+
+async function setupRocks(config = {}) {
+    rocksConfig = {
+        count: Math.max(0, Number(config.count) || 0),
+        area: config.area || { x: 170, z: 170 },
+        minScale: Number(config.min_scale) || 0.8,
+        maxScale: Number(config.max_scale) || 2.2,
+        colors: Array.isArray(config.colors) && config.colors.length ? config.colors : ['#4b5054', '#5b6064', '#6b6f72'],
+        model: config.model || { path: null, target_size: 3 }
+    };
+
+    for (const rock of rockList) scene.remove(rock.mesh);
+    rockList = [];
+
+    const modelAsset = await loadModelAsset(rocksConfig.model);
+
+    for (let i = 0; i < rocksConfig.count; i++) {
+        const group = new THREE.Group();
+        const scale = rocksConfig.minScale + Math.random() * (rocksConfig.maxScale - rocksConfig.minScale);
+
+        if (modelAsset?.scene) {
+            const model = SkeletonUtils.clone(modelAsset.scene);
+            prepareModel(model, {
+                ...rocksConfig.model,
+                target_size: Number(rocksConfig.model.target_size) || 3
+            });
+            group.add(model);
+        } else {
+            group.add(createProceduralRock(rocksConfig));
+        }
+
+        const x = (Math.random() - 0.5) * rocksConfig.area.x;
+        const z = (Math.random() - 0.5) * rocksConfig.area.z;
+
+        group.position.set(x, getFloorHeight(x, z), z);
+        group.rotation.set(
+            (Math.random() - 0.5) * 0.25,
+            Math.random() * Math.PI * 2,
+            (Math.random() - 0.5) * 0.25
+        );
+        group.scale.setScalar(scale);
+        scene.add(group);
+
+        rockList.push({ mesh: group, baseVisible: true });
+    }
+
+    applyRockVisibility();
+}
+
+function createProceduralRock(config) {
+    const geometry = new THREE.IcosahedronGeometry(1, 1);
+    const position = geometry.attributes.position;
+
+    for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i);
+        const y = position.getY(i);
+        const z = position.getZ(i);
+        const noise =
+            1 +
+            Math.sin(x * 7.3 + y * 3.1) * 0.14 +
+            Math.sin(z * 9.1 - x * 4.7) * 0.09 +
+            (Math.random() - 0.5) * 0.12;
+
+        position.setXYZ(i, x * noise, y * (0.78 + Math.random() * 0.28), z * noise);
+    }
+
+    geometry.computeVertexNormals();
+
+    const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+    return new THREE.Mesh(geometry, getMaterial(color));
+}
+
+function applyRockVisibility() {
+    if (!rockList.length) return;
+
+    const value = Number(document.getElementById('rockDensity')?.value ?? 100) / 100;
+    const visibleCount = Math.round(rockList.length * value);
+
+    rockList.forEach((rock, index) => {
+        rock.baseVisible = index < visibleCount;
+        rock.mesh.visible = rock.baseVisible;
+    });
+
+    updateHUD();
+}
+
+function randomizeAquarium() {
+    for (const entity of renderList) {
+        if (!entity.mesh.visible) continue;
+
+        const box = entity.behavior?.bounding_box || { x: 100, y: 20, z: 100 };
+        const x = (Math.random() - 0.5) * box.x;
+        const z = (Math.random() - 0.5) * box.z;
+        let y = (Math.random() - 0.5) * (box.y || 20);
+        const floorY = getFloorHeight(x, z);
+
+        if (entity.behavior?.type === 'bottom_crawl' || entity.behavior?.type === 'static') {
+            y = floorY;
+        } else {
+            y = Math.max(y, floorY + 5);
+        }
+
+        entity.mesh.position.set(x, y, z);
+        entity.target.copy(entity.mesh.position);
+        entity.mesh.rotation.y = Math.random() * Math.PI * 2;
+    }
+
+    for (const rock of rockList) {
+        const x = (Math.random() - 0.5) * (rocksConfig?.area?.x || 170);
+        const z = (Math.random() - 0.5) * (rocksConfig?.area?.z || 170);
+        rock.mesh.position.set(x, getFloorHeight(x, z), z);
+        rock.mesh.rotation.set(
+            (Math.random() - 0.5) * 0.25,
+            Math.random() * Math.PI * 2,
+            (Math.random() - 0.5) * 0.25
+        );
+    }
+}
+
+function toggleParticles() {
+    particlesVisible = !particlesVisible;
+    if (particles) particles.visible = particlesVisible;
+    const button = document.getElementById('btnParticles');
+    if (button) button.textContent = particlesVisible ? '✦ Particelle' : '✦ Particelle OFF';
+}
+
 function setupUI() {
     const fishScale = document.getElementById('fishScale');
     const swimSpeed = document.getElementById('swimSpeed');
     const lightIntensity = document.getElementById('lightIntensity');
     const waterColor = document.getElementById('waterColor');
+    const rockDensity = document.getElementById('rockDensity');
+    const dayNight = document.getElementById('dayNight');
 
     fishScale?.addEventListener('input', event => {
         simParams.populationMultiplier = Number(event.target.value) / 100;
@@ -481,6 +614,20 @@ function setupUI() {
         directionalLightRef.intensity = factor * 2;
     });
 
+    rockDensity?.addEventListener('input', event => {
+        const value = Number(event.target.value) / 100;
+        const label = document.getElementById('valRocks');
+        if (label) label.textContent = Math.round(value * (rocksConfig?.count || rockList.length));
+        applyRockVisibility();
+    });
+
+    dayNight?.addEventListener('input', event => {
+        const value = Number(event.target.value) / 100;
+        ambientLightRef.intensity = 0.12 + value * 0.68;
+        directionalLightRef.intensity = 0.3 + value * 1.7;
+        if (particles) particles.material.opacity = 0.35 + (1 - value) * 0.35;
+    });
+
     waterColor?.addEventListener('input', event => {
         const color = new THREE.Color(event.target.value);
         scene.background = color;
@@ -490,6 +637,8 @@ function setupUI() {
     document.getElementById('btnPause')?.addEventListener('click', togglePause);
     document.getElementById('btnReset')?.addEventListener('click', resetCamera);
     document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
+    document.getElementById('btnParticles')?.addEventListener('click', toggleParticles);
+    document.getElementById('btnRandomize')?.addEventListener('click', randomizeAquarium);
     document.getElementById('btnStats')?.addEventListener('click', () => {
         showStats = !showStats;
         document.getElementById('stats').classList.toggle('hidden', !showStats);
@@ -604,6 +753,7 @@ function updateHUD() {
     const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
     const modelCount = loadedModelPaths.size;
     const failedCount = failedModelPaths.size;
+    const visibleRocks = rockList.filter(rock => rock.mesh.visible).length;
 
     const totalEl = document.getElementById('statTotal');
     const modelsEl = document.getElementById('statModels');
@@ -613,12 +763,16 @@ function updateHUD() {
     if (modelsEl) modelsEl.textContent = modelCount + (failedCount ? ' / ' + (modelCount + failedCount) : '');
     if (modeEl) modeEl.textContent = lowPowerMode ? 'Mobile' : 'Desktop';
 
+    const rocksEl = document.getElementById('statRocks');
+    if (rocksEl) rocksEl.textContent = String(visibleRocks);
+
     const detail = document.getElementById('statDetail');
     if (detail) {
         detail.textContent =
             'Pesci: ' + (counts.fish || 0) +
             ' · Granchi: ' + (counts.crustacean || 0) +
-            ' · Coralli: ' + (counts.plant || 0);
+            ' · Coralli: ' + (counts.plant || 0) +
+            ' · Rocce: ' + visibleRocks;
     }
 
     const speciesEl = document.getElementById('speciesDetail');
