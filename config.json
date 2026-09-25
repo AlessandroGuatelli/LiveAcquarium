@@ -648,8 +648,8 @@
       "tags": [
         "obstacle"
       ],
-      "count": 40,
-      "scale": 2,
+      "count": 180,
+      "scale": 1.55,
       "model": {
         "path": null
       },
@@ -1058,13 +1058,13 @@
     }
   ],
   "rocks": {
-    "count": 45,
+    "count": 140,
     "area": {
-      "x": 175,
-      "z": 175
+      "x": 240,
+      "z": 240
     },
-    "min_scale": 0.7,
-    "max_scale": 2.4,
+    "min_scale": 0.65,
+    "max_scale": 2.6,
     "colors": [
       "#45494d",
       "#555a5e",
