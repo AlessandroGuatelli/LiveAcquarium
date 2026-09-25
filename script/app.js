@@ -16,6 +16,11 @@ let modelStatusReady = false;
 let rockList = [];
 let rocksConfig = null;
 let particlesVisible = true;
+let followedEntity = null;
+let followEnabled = false;
+let selectedSpecies = 'all';
+let speciesPopulationOverrides = new Map();
+let lastHUDUpdate = 0;
 let modelDiagnostics = new Map();
 let showDiagnostics = false;
 let showLabels = false;
@@ -228,7 +233,12 @@ async function parseConfig(config) {
     );
 
     for (const { entityDef, modelAsset } of assets) {
-        for (let i = 0; i < Number(entityDef.count) || 0; i++) {
+        const configuredCount = Number(entityDef.count) || 0;
+        const overrideCount = speciesPopulationOverrides.has(entityDef.id)
+            ? speciesPopulationOverrides.get(entityDef.id)
+            : configuredCount;
+
+        for (let i = 0; i < overrideCount; i++) {
             const group = new THREE.Group();
             let mixer = null;
 
@@ -291,7 +301,14 @@ async function parseConfig(config) {
                 timer: 0,
                 zigzagPeriod: 1 + Math.random() * 2,
                 mixer,
-                baseVisible: true
+                baseVisible: true,
+                hunger: Math.random() * 25,
+                energy: 70 + Math.random() * 30,
+                stress: Math.random() * 10,
+                age: Math.random() * 100,
+                eaten: 0,
+                speciesId: entityDef.id,
+                ai: entityDef.ai || {}
             });
         }
     }
@@ -304,6 +321,9 @@ async function parseConfig(config) {
     }
 
     modelStatusReady = true;
+    populateSpeciesSelect();
+    refreshPopulationUI();
+    updateCreatureSelector();
 }
 
 function hasRenderableGeometry(model) {
@@ -588,6 +608,150 @@ function toggleParticles() {
     if (button) button.textContent = particlesVisible ? '✦ Particelle' : '✦ Particelle OFF';
 }
 
+
+function getSpeciesEntities() {
+    const map = new Map();
+    for (const entity of renderList) {
+        if (!map.has(entity.id)) map.set(entity.id, []);
+        map.get(entity.id).push(entity);
+    }
+    return map;
+}
+
+function populateSpeciesSelect() {
+    const select = document.getElementById('speciesSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="all">Tutte le creature</option>';
+    for (const [id, entities] of getSpeciesEntities()) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = id.replaceAll('_', ' ') + ' (' + entities.length + ')';
+        select.appendChild(option);
+    }
+    select.value = selectedSpecies;
+}
+
+function setSpeciesPopulation(id, count) {
+    if (id === 'all') return;
+
+    const species = getSpeciesEntities().get(id) || [];
+    const target = Math.max(0, Math.min(100, Math.round(Number(count) || 0)));
+    speciesPopulationOverrides.set(id, target);
+
+    species.forEach((entity, index) => {
+        entity.mesh.visible = index < target;
+        entity.baseVisible = entity.mesh.visible;
+    });
+
+    updateHUD();
+}
+
+function followSelectedCreature() {
+    const select = document.getElementById('creatureSelect');
+    const entityId = select?.value;
+    if (!entityId) return;
+
+    const entity = renderList.find(item => item.id === entityId && item.mesh.visible);
+    if (!entity) return;
+
+    followedEntity = entity;
+    followEnabled = true;
+    controls.enablePan = false;
+    document.getElementById('followStatus').textContent = 'Segui: ' + entity.id.replaceAll('_', ' ');
+}
+
+function stopFollowing() {
+    followEnabled = false;
+    followedEntity = null;
+    document.getElementById('followStatus').textContent = 'Segui: nessuna creatura';
+}
+
+function updateFollowCamera() {
+    if (!followEnabled || !followedEntity?.mesh?.visible) return;
+
+    const target = followedEntity.mesh.position.clone();
+    controls.target.lerp(target, 0.08);
+
+    const desired = target.clone().add(new THREE.Vector3(0, 5, 16));
+    camera.position.lerp(desired, 0.06);
+}
+
+function updateCreatureAI(delta) {
+    for (const entity of renderList) {
+        if (!entity.mesh.visible || !entity.ai) continue;
+
+        const type = entity.type;
+        const hungerRate = Number(entity.ai.hunger_rate) || (type === 'fish' ? 0.01 : 0.003);
+        const energyDecay = Number(entity.ai.energy_decay) || 0.005;
+        const stressDecay = Number(entity.ai.stress_decay) || 0.002;
+
+        entity.hunger = Math.min(100, entity.hunger + hungerRate * delta * 60);
+        entity.energy = Math.max(0, entity.energy - energyDecay * delta * 60);
+        entity.stress = Math.max(0, entity.stress - stressDecay * delta * 60);
+        entity.age += delta;
+
+        const nearbyThreat = renderList.some(other =>
+            other !== entity &&
+            other.mesh.visible &&
+            other.tags.some(tag => (entity.behavior?.flee_tags || []).includes(tag)) &&
+            entity.mesh.position.distanceTo(other.mesh.position) < (entity.behavior?.flee_radius || 0)
+        );
+
+        if (nearbyThreat) entity.stress = Math.min(100, entity.stress + 8 * delta);
+
+        if (entity.hunger >= (Number(entity.ai.critical_hunger) || 90)) {
+            entity.stress = Math.min(100, entity.stress + 3 * delta);
+            entity.energy = Math.max(0, entity.energy - 0.02 * delta * 60);
+        }
+
+        // Semplice ciclo energetico: creature sazie recuperano un po' di energia.
+        if (entity.hunger < 35) entity.energy = Math.min(100, entity.energy + 0.015 * delta * 60);
+
+        if (entity.hunger >= (Number(entity.ai.hunger_threshold) || 65) && entity.behavior?.target_tags?.length) {
+            entity.stress = Math.min(100, entity.stress + 0.5 * delta);
+        }
+    }
+}
+
+function updateCreatureSelector() {
+    const select = document.getElementById('creatureSelect');
+    if (!select) return;
+
+    const current = select.value;
+    select.innerHTML = '<option value="">Seleziona creatura…</option>';
+
+    renderList.forEach((entity, index) => {
+        if (!entity.mesh.visible) return;
+        const option = document.createElement('option');
+        option.value = String(index);
+        option.textContent = entity.id.replaceAll('_', ' ') + ' #' + (index + 1);
+        select.appendChild(option);
+    });
+
+    if ([...select.options].some(o => o.value === current)) select.value = current;
+}
+
+function refreshPopulationUI() {
+    const select = document.getElementById('speciesSelect');
+    const slider = document.getElementById('speciesPopulation');
+    const value = document.getElementById('valSpeciesPopulation');
+
+    if (!select || !slider) return;
+
+    if (select.value === 'all') {
+        slider.disabled = true;
+        if (value) value.textContent = '—';
+        return;
+    }
+
+    slider.disabled = false;
+    const count = (getSpeciesEntities().get(select.value) || []).length;
+    slider.max = Math.max(1, count);
+    slider.value = speciesPopulationOverrides.get(select.value) ?? count;
+    if (value) value.textContent = slider.value;
+}
+
 function setupUI() {
     const fishScale = document.getElementById('fishScale');
     const swimSpeed = document.getElementById('swimSpeed');
@@ -595,6 +759,9 @@ function setupUI() {
     const waterColor = document.getElementById('waterColor');
     const rockDensity = document.getElementById('rockDensity');
     const dayNight = document.getElementById('dayNight');
+    const speciesSelect = document.getElementById('speciesSelect');
+    const speciesPopulation = document.getElementById('speciesPopulation');
+    const creatureSelect = document.getElementById('creatureSelect');
 
     fishScale?.addEventListener('input', event => {
         simParams.populationMultiplier = Number(event.target.value) / 100;
@@ -637,6 +804,15 @@ function setupUI() {
     document.getElementById('btnPause')?.addEventListener('click', togglePause);
     document.getElementById('btnReset')?.addEventListener('click', resetCamera);
     document.getElementById('btnFullscreen')?.addEventListener('click', toggleFullscreen);
+    speciesSelect?.addEventListener('change', () => refreshPopulationUI());
+    speciesPopulation?.addEventListener('input', event => {
+        const value = Number(event.target.value);
+        document.getElementById('valSpeciesPopulation').textContent = value;
+        setSpeciesPopulation(speciesSelect.value, value);
+    });
+    document.getElementById('btnFollow')?.addEventListener('click', followSelectedCreature);
+    document.getElementById('btnStopFollow')?.addEventListener('click', stopFollowing);
+
     document.getElementById('btnParticles')?.addEventListener('click', toggleParticles);
     document.getElementById('btnRandomize')?.addEventListener('click', randomizeAquarium);
     document.getElementById('btnStats')?.addEventListener('click', () => {
@@ -754,6 +930,12 @@ function updateHUD() {
     const modelCount = loadedModelPaths.size;
     const failedCount = failedModelPaths.size;
     const visibleRocks = rockList.filter(rock => rock.mesh.visible).length;
+    const avgHunger = renderList.length
+        ? renderList.reduce((sum, entity) => sum + (entity.hunger || 0), 0) / renderList.length
+        : 0;
+    const avgEnergy = renderList.length
+        ? renderList.reduce((sum, entity) => sum + (entity.energy || 0), 0) / renderList.length
+        : 0;
 
     const totalEl = document.getElementById('statTotal');
     const modelsEl = document.getElementById('statModels');
@@ -765,6 +947,10 @@ function updateHUD() {
 
     const rocksEl = document.getElementById('statRocks');
     if (rocksEl) rocksEl.textContent = String(visibleRocks);
+    const hungerEl = document.getElementById('statHunger');
+    const energyEl = document.getElementById('statEnergy');
+    if (hungerEl) hungerEl.textContent = Math.round(avgHunger) + '%';
+    if (energyEl) energyEl.textContent = Math.round(avgEnergy) + '%';
 
     const detail = document.getElementById('statDetail');
     if (detail) {
@@ -837,6 +1023,8 @@ function animate() {
         }
 
         updateEntities(delta, time);
+        updateCreatureAI(delta);
+        updateFollowCamera();
     }
 
     controls.update();
