@@ -649,11 +649,11 @@ function setSpeciesPopulation(id, count) {
 
 function followSelectedCreature() {
     const select = document.getElementById('creatureSelect');
-    const entityId = select?.value;
-    if (!entityId) return;
+    const entityIndex = Number(select?.value);
+    if (!Number.isInteger(entityIndex) || entityIndex < 0) return;
 
-    const entity = renderList.find(item => item.id === entityId && item.mesh.visible);
-    if (!entity) return;
+    const entity = renderList[entityIndex];
+    if (!entity?.mesh?.visible) return;
 
     followedEntity = entity;
     followEnabled = true;
