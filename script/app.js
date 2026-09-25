@@ -629,9 +629,14 @@ function toggleParticles() {
 }
 
 
+function isCreature(entity) {
+    return entity.type !== 'plant';
+}
+
 function getSpeciesEntities() {
     const map = new Map();
     for (const entity of renderList) {
+        if (!isCreature(entity)) continue;
         if (!map.has(entity.id)) map.set(entity.id, []);
         map.get(entity.id).push(entity);
     }
@@ -656,7 +661,7 @@ function setSpeciesPopulation(id, count) {
     if (id === 'all') return;
 
     const species = getSpeciesEntities().get(id) || [];
-    const target = Math.max(0, Math.min(100, Math.round(Number(count) || 0)));
+    const target = Math.max(0, Math.min(300, Math.round(Number(count) || 0)));
     speciesPopulationOverrides.set(id, target);
 
     species.forEach((entity, index) => {
@@ -742,7 +747,7 @@ function updateCreatureSelector() {
     select.innerHTML = '<option value="">Seleziona creatura…</option>';
 
     renderList.forEach((entity, index) => {
-        if (!entity.mesh.visible) return;
+        if (!isCreature(entity) || !entity.mesh.visible) return;
         const option = document.createElement('option');
         option.value = String(index);
         option.textContent = entity.id.replaceAll('_', ' ') + ' #' + (index + 1);
@@ -767,7 +772,7 @@ function refreshPopulationUI() {
 
     slider.disabled = false;
     const count = (getSpeciesEntities().get(select.value) || []).length;
-    slider.max = Math.max(1, count);
+    slider.max = 300;
     slider.value = speciesPopulationOverrides.get(select.value) ?? count;
     if (value) value.textContent = slider.value;
 }
@@ -877,6 +882,7 @@ function resetCamera() {
 
 async function centerCreatures() {
     for (const entity of renderList) {
+        if (!isCreature(entity)) continue;
         const box = entity.behavior?.bounding_box || {x:80,y:25,z:80};
         const x = (Math.random() - 0.5) * Math.min(Number(box.x) || 80, 60);
         const z = (Math.random() - 0.5) * Math.min(Number(box.z) || 80, 60);
@@ -895,7 +901,11 @@ async function centerCreatures() {
 }
 
 function repopulateCreatures() {
-    for (const entity of renderList) entity.mesh.visible = true;
+    for (const entity of renderList) {
+        if (!isCreature(entity)) continue;
+        entity.mesh.visible = true;
+        entity.baseVisible = true;
+    }
     simParams.populationMultiplier = 1;
     const slider = document.getElementById('fishScale');
     if (slider) slider.value = '100';
@@ -942,7 +952,7 @@ function applyPopulationVisibility() {
 function updateHUD() {
     const counts = {};
     renderList.forEach(entity => {
-        if (!entity.mesh.visible) return;
+        if (!isCreature(entity) || !entity.mesh.visible) return;
         counts[entity.type] = (counts[entity.type] || 0) + 1;
     });
 
@@ -972,6 +982,27 @@ function updateHUD() {
     if (hungerEl) hungerEl.textContent = Math.round(avgHunger) + '%';
     if (energyEl) energyEl.textContent = Math.round(avgEnergy) + '%';
 
+    const selected = Number(document.getElementById('creatureSelect')?.value);
+    const selectedCreature = Number.isInteger(selected) && selected >= 0 ? renderList[selected] : null;
+    const selectedDetail = document.getElementById('selectedCreatureStats');
+    if (selectedDetail) {
+        if (selectedCreature && isCreature(selectedCreature) && selectedCreature.mesh.visible) {
+            const state = selectedCreature.hunger >= 90 ? 'Affamata' :
+                selectedCreature.stress >= 70 ? 'Stressata' :
+                selectedCreature.energy <= 25 ? 'Stanca' :
+                selectedCreature.hunger < 35 ? 'Sazia' : 'Normale';
+            selectedDetail.innerHTML =
+                '<strong>' + selectedCreature.id.replaceAll('_', ' ') + ' #' + (selected + 1) + '</strong>' +
+                '<br>Fame: ' + Math.round(selectedCreature.hunger) + '%' +
+                ' · Energia: ' + Math.round(selectedCreature.energy) + '%' +
+                '<br>Stress: ' + Math.round(selectedCreature.stress) + '%' +
+                ' · Età: ' + selectedCreature.age.toFixed(1) +
+                '<br>Stato: ' + state + ' · Cibo: ' + selectedCreature.eaten;
+        } else {
+            selectedDetail.textContent = 'Seleziona una creatura per vedere le statistiche individuali.';
+        }
+    }
+
     const detail = document.getElementById('statDetail');
     if (detail) {
         detail.textContent =
@@ -985,7 +1016,7 @@ function updateHUD() {
     if (speciesEl) {
         const species = {};
         renderList.forEach(entity => {
-            if (!entity.mesh.visible) return;
+            if (!isCreature(entity) || !entity.mesh.visible) return;
             species[entity.id] = (species[entity.id] || 0) + 1;
         });
         const labels = {
@@ -997,7 +1028,6 @@ function updateHUD() {
             delfino: '🐬 Delfini',
             manta: '🌊 Mante',
             balena: '🐋 Balena',
-            corallo: '🪸 Coralli'
         };
         speciesEl.textContent = Object.entries(labels)
             .filter(([id]) => species[id])
