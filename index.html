@@ -81,6 +81,23 @@ button:hover{background:rgba(255,255,255,.14)}
     <div class="button-row">
       <button id="btnPause" data-pause-label>Ⅱ Pausa</button>
       <button id="btnReset">↺ Reset camera</button>
+      <div class="control-group">
+        <label><span>Specie</span></label>
+        <select id="speciesSelect"><option value="all">Tutte le creature</option></select>
+      </div>
+      <div class="control-group">
+        <label><span>Numero specie</span><span id="valSpeciesPopulation">—</span></label>
+        <input type="range" id="speciesPopulation" min="0" max="100" value="0" disabled>
+      </div>
+      <div class="control-group">
+        <label><span>Segui creatura</span></label>
+        <select id="creatureSelect"><option value="">Seleziona creatura…</option></select>
+        <div class="button-row">
+          <button id="btnFollow">◎ Segui</button>
+          <button id="btnStopFollow">× Stop</button>
+        </div>
+        <small id="followStatus">Segui: nessuna creatura</small>
+      </div>
       <button id="btnFullscreen">⛶ Fullscreen</button>
       <button id="btnParticles">✦ Particelle</button>
       <button id="btnRandomize">⤨ Randomizza</button>
@@ -100,6 +117,8 @@ button:hover{background:rgba(255,255,255,.14)}
   <div class="stat-line"><span>Entità visibili</span><strong id="statTotal">0</strong></div>
   <div class="stat-line"><span>Modelli GLB</span><strong id="statModels">0</strong></div>
   <div class="stat-line"><span>Rocce</span><strong id="statRocks">0</strong></div>
+  <div class="stat-line"><span>Fame media</span><strong id="statHunger">0%</strong></div>
+  <div class="stat-line"><span>Energia media</span><strong id="statEnergy">0%</strong></div>
   <div class="stat-line"><span>Dispositivo</span><strong id="statMode">—</strong></div>
   <div class="stat-line"><span>FPS</span><strong id="statFps">0</strong></div>
   <div id="statDetail">Pesci: 0 · Granchi: 0 · Coralli: 0</div>
